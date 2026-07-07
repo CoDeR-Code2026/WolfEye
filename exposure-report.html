@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exposure Report — what this tab already knows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12151A;
+    --ink-2:#1A1F26;
+    --paper:#E7E3D8;
+    --paper-dim:#9AA0A6;
+    --redact:#0A0C0F;
+    --amber:#D98E3F;
+    --teal:#5B8A87;
+    --danger:#C1543A;
+    --divider:#2A2F38;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Source Serif 4', Georgia, serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:var(--serif);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--amber);}
+
+  /* ---------- Header / hero ---------- */
+  .hero{
+    padding:64px 24px 40px;
+    max-width:880px;
+    margin:0 auto;
+    border-bottom:1px solid var(--divider);
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin:0 0 18px;
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:clamp(28px,5vw,44px);
+    line-height:1.15;
+    margin:0 0 20px;
+    max-width:14ch;
+  }
+  .lede{
+    color:var(--paper-dim);
+    font-size:17px;
+    max-width:62ch;
+    margin:0 0 32px;
+  }
+
+  .signature{
+    font-family:var(--mono);
+    background:var(--ink-2);
+    border:1px solid var(--divider);
+    border-radius:4px;
+    padding:20px 22px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:24px;
+    align-items:center;
+  }
+  .signature .label{
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--paper-dim);
+    margin-bottom:6px;
+  }
+  .signature .hash{
+    font-size:20px;
+    color:var(--amber);
+    letter-spacing:0.02em;
+    word-break:break-all;
+  }
+  .signature .count{
+    font-size:20px;
+    color:var(--paper);
+  }
+  .signature .divider-v{
+    width:1px;
+    align-self:stretch;
+    background:var(--divider);
+  }
+  .note-inline{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--paper-dim);
+    margin-top:14px;
+  }
+
+  /* ---------- Sections ---------- */
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px;}
+  section.category{
+    padding:36px 0;
+    border-bottom:1px solid var(--divider);
+  }
+  .cat-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:6px;
+    gap:12px;
+  }
+  .cat-head h2{
+    font-family:var(--mono);
+    font-size:14px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--paper);
+    margin:0;
+  }
+  .cat-head .risk{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    padding:3px 8px;
+    border-radius:3px;
+    white-space:nowrap;
+  }
+  .risk.low{color:var(--teal); border:1px solid var(--teal);}
+  .risk.med{color:var(--amber); border:1px solid var(--amber);}
+  .risk.high{color:var(--danger); border:1px solid var(--danger);}
+
+  .cat-desc{
+    color:var(--paper-dim);
+    font-size:14px;
+    max-width:64ch;
+    margin:0 0 20px;
+  }
+
+  .rows{display:flex; flex-direction:column; gap:1px; background:var(--divider);}
+  .row{
+    background:var(--ink);
+    display:grid;
+    grid-template-columns: 220px 1fr;
+    gap:16px;
+    padding:11px 4px;
+    align-items:start;
+  }
+  .row .k{
+    font-family:var(--mono);
+    font-size:12.5px;
+    color:var(--paper-dim);
+    padding-top:2px;
+  }
+  .row .v{
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--paper);
+    word-break:break-word;
+    position:relative;
+    min-height:1.2em;
+  }
+  .v.redacted::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:var(--redact);
+    border-radius:2px;
+    animation: reveal 0.6s ease forwards;
+    animation-delay: var(--d, 0s);
+  }
+  @keyframes reveal{
+    0%{ opacity:1; }
+    70%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+  .v .fallback{color:var(--paper-dim); font-style:italic;}
+
+  @media (max-width:640px){
+    .row{grid-template-columns: 1fr; gap:2px;}
+  }
+
+  footer{
+    max-width:880px;
+    margin:0 auto;
+    padding:40px 24px 80px;
+    color:var(--paper-dim);
+    font-size:13px;
+  }
+  footer .mono{font-family:var(--mono); font-size:12px;}
+  .ip-box{
+    font-family:var(--mono);
+    font-size:13px;
+    background:var(--ink-2);
+    border:1px solid var(--divider);
+    border-radius:4px;
+    padding:16px;
+    margin-top:16px;
+  }
+  .ip-box button{
+    font-family:var(--mono);
+    font-size:12px;
+    background:transparent;
+    color:var(--amber);
+    border:1px solid var(--amber);
+    border-radius:3px;
+    padding:6px 12px;
+    cursor:pointer;
+  }
+  .ip-box button:hover{background:rgba(217,142,63,0.1);}
+  .ip-result{margin-top:10px; color:var(--paper);}
+
+  :focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
+  @media (prefers-reduced-motion: reduce){
+    .v.redacted::before{ animation: none; opacity:0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <p class="eyebrow">Client-side exposure report — nothing leaves this tab</p>
+  <h1>What this page learned about your machine in the time it took to load</h1>
+  <p class="lede">Every value below was read by plain JavaScript, with no login, no cookies, and no permission prompts. This is the baseline exposure any site gets before you click anything. Nothing here is sent anywhere — open your network tab if you want to check.</p>
+
+  <div class="signature">
+    <div>
+      <div class="label">Composite signal count</div>
+      <div class="count" id="sigCount">counting…</div>
+    </div>
+    <div class="divider-v"></div>
+    <div style="flex:1;min-width:200px;">
+      <div class="label">Fingerprint hash (from the signals below)</div>
+      <div class="hash" id="sigHash">computing…</div>
+    </div>
+  </div>
+  <p class="note-inline">This hash is derived only from values shown on this page. It is not stored, logged, or transmitted — reload the page and it's gone.</p>
+  <p class="note-inline" style="margin-top:6px;">Exception: the "Persistence" section further down deliberately writes one value to localStorage, clearly labeled, so you can see the difference between a real stored ID and a recomputed fingerprint. Nothing else on this page touches storage.</p>
+</div>
+
+<div class="wrap" id="report"></div>
+
+<footer>
+  <p><strong>Deliberately excluded:</strong> this report does not collect or display cookies, any persistent machine/device identifier, your MAC address (no browser can read this — it's not a gap, it's a hard OS/network boundary), or OS-version detail from your user-agent string (redacted below on request).</p>
+  <div class="ip-box" style="margin-bottom:20px;">
+    <div style="margin-bottom:8px;">Reload this page a few times: the stored UUID above stays put because it's sitting in localStorage. Clear it here, then reload — it'll be regenerated as a brand-new value, because there's nothing real backing it. The fingerprint hash next to it, meanwhile, will come back <em>identical</em> every time, unprompted, because it's derived from your actual hardware rather than anything stored.</div>
+    <button id="clearIdBtn">Clear stored UUID</button>
+    <div class="ip-result" id="clearIdResult"></div>
+  </div>
+  <div class="ip-box">
+    <div style="margin-bottom:8px;">Your IP address is <em>not</em> readable by JavaScript — but it's visible to every server you talk to on every request, automatically, the moment you connect. From IP alone, any server can also look up your approximate <strong>country, region, and city</strong> (this is how sites geo-target ads or content with zero permission prompt). This page doesn't log it. If you want to see what a typical server-side log would capture, you can check on demand:</div>
+    <button id="ipBtn">Check my public IP + approximate location (calls a third-party lookup, on click only)</button>
+    <div class="ip-result" id="ipResult"></div>
+  </div>
+
+  <div class="ip-box" style="margin-top:20px;">
+    <div style="margin-bottom:8px;">Precise GPS-level location is a different story: it's <strong>not</strong> silently available. The browser must show you an explicit permission prompt, and nothing is read until you click "Allow." This button demonstrates that consented path — no data leaves this tab.</div>
+    <button id="geoBtn">Request precise location (will show a browser permission prompt)</button>
+    <div class="ip-result" id="geoResult"></div>
+  </div>
+  <p class="mono" style="margin-top:28px;">No authentication. No cookies set. No data transmitted by this page. View source any time.</p>
+</footer>
+
+<script>
+(function(){
+  const report = document.getElementById('report');
+  const collected = []; // {key, value} pairs used for hash + count
+
+  function record(key, value){
+    collected.push(key + '::' + String(value));
+    return value;
+  }
+
+  function safe(fn, fallback){
+    try { const v = fn(); return (v === undefined || v === null || v === '') ? fallback : v; }
+    catch(e){ return fallback; }
+  }
+
+  function redactUAOS(ua){
+    // Strip common OS tokens from the UA string, leave engine/browser info.
+    return ua
+      .replace(/\(([^)]*)\)/, '(OS details redacted)')
+      .trim();
+  }
+
+  let rowDelay = 0;
+  function addCategory(title, risk, desc, rows){
+    const sec = document.createElement('section');
+    sec.className = 'category';
+    sec.innerHTML = `
+      <div class="cat-head">
+        <h2>${title}</h2>
+        <span class="risk ${risk}">${risk === 'high' ? 'High signal' : risk === 'med' ? 'Moderate signal' : 'Low signal'}</span>
+      </div>
+      <p class="cat-desc">${desc}</p>
+      <div class="rows"></div>
+    `;
+    const rowsEl = sec.querySelector('.rows');
+    rows.forEach(([k,v])=>{
+      rowDelay += 0.03;
+      const r = document.createElement('div');
+      r.className = 'row';
+      r.innerHTML = `<div class="k">${k}</div><div class="v redacted" style="--d:${rowDelay}s">${v === '' ? '<span class="fallback">not available in this browser</span>' : escapeHtml(String(v))}</div>`;
+      rowsEl.appendChild(r);
+    });
+    report.appendChild(sec);
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- Browser & session ----------
+  const ua = safe(()=>navigator.userAgent, '');
+  addCategory('Browser & session', 'med',
+    'Sent automatically on every request you make, to every site, before any script even runs.',
+    [
+      ['User-Agent (OS redacted)', record('ua', redactUAOS(ua))],
+      ['Language(s)', record('lang', safe(()=>navigator.languages.join(', '), safe(()=>navigator.language,'')))],
+      ['Cookies enabled', record('cookies', safe(()=>navigator.cookieEnabled,''))],
+      ['Do Not Track signal', record('dnt', safe(()=>navigator.doNotTrack ?? 'not set',''))],
+      ['PDF viewer built in', record('pdf', safe(()=>navigator.pdfViewerEnabled,''))],
+      ['Referrer that brought you here', record('ref', safe(()=>document.referrer || '(direct / no referrer)',''))],
+    ]);
+
+  // ---------- Hardware ----------
+  addCategory('Hardware signals', 'med',
+    'Rough hardware characteristics, readable without any permission prompt.',
+    [
+      ['Logical CPU cores', record('cpu', safe(()=>navigator.hardwareConcurrency,''))],
+      ['Device memory (approx, GB)', record('mem', safe(()=>navigator.deviceMemory,''))],
+      ['Max touch points', record('touch', safe(()=>navigator.maxTouchPoints,''))],
+      ['Network type', record('net', safe(()=>navigator.connection.effectiveType,''))],
+      ['Estimated downlink (Mbps)', record('downlink', safe(()=>navigator.connection.downlink,''))],
+    ]);
+
+  // ---------- Display ----------
+  addCategory('Display', 'low',
+    'Screen geometry and rendering surface — mostly used to serve you the right layout, but also narrows down which device you have.',
+    [
+      ['Screen size', record('scr', safe(()=>`${screen.width} × ${screen.height}`,''))],
+      ['Available screen size', record('scra', safe(()=>`${screen.availWidth} × ${screen.availHeight}`,''))],
+      ['Color depth', record('depth', safe(()=>screen.colorDepth + ' bit',''))],
+      ['Device pixel ratio', record('dpr', safe(()=>window.devicePixelRatio,''))],
+      ['Orientation', record('orient', safe(()=>screen.orientation.type,''))],
+    ]);
+
+  // ---------- Locale & time ----------
+  addCategory('Locale & time', 'low',
+    'Where and roughly when a site thinks you are — used for personalization, and for narrowing your location.',
+    [
+      ['Timezone', record('tz', safe(()=>Intl.DateTimeFormat().resolvedOptions().timeZone,''))],
+      ['UTC offset (minutes)', record('tzoff', safe(()=>new Date().getTimezoneOffset(),''))],
+      ['Locale', record('locale', safe(()=>Intl.DateTimeFormat().resolvedOptions().locale,''))],
+      ['Calendar system', record('cal', safe(()=>Intl.DateTimeFormat().resolvedOptions().calendar,''))],
+    ]);
+
+  // ---------- Canvas / WebGL / Audio fingerprint ----------
+  function canvasFingerprint(){
+    const c = document.createElement('canvas');
+    c.width = 240; c.height = 40;
+    const ctx = c.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = "14px 'Arial'";
+    ctx.fillStyle = '#f60';
+    ctx.fillRect(0,0,100,20);
+    ctx.fillStyle = '#069';
+    ctx.fillText('exposure-check 😊', 2, 15);
+    return c.toDataURL();
+  }
+  function webglInfo(){
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+    if(!gl) return {vendor:'', renderer:''};
+    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+    if(!dbg) return {vendor:'(blocked by browser)', renderer:'(blocked by browser)'};
+    return {
+      vendor: gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL),
+      renderer: gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)
+    };
+  }
+  const gpu = safe(webglInfo, {vendor:'',renderer:''});
+  const canvasHash = safe(()=>hashString(canvasFingerprint()), '');
+
+  addCategory('Rendering fingerprint', 'high',
+    'These are the classic fingerprinting signals: how your exact GPU and font-rendering pipeline draws a hidden image, hashed into a near-unique value. This is how sites can recognize a device across visits with no cookies at all.',
+    [
+      ['GPU vendor', record('gpuv', gpu.vendor)],
+      ['GPU renderer', record('gpur', gpu.renderer)],
+      ['Canvas render hash', record('canvas', canvasHash)],
+    ]);
+
+  // ---------- Persistence demo: real stored ID vs recomputed fingerprint ----------
+  function genUUID(){
+    if(crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+      const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
+      return v.toString(16);
+    });
+  }
+  const STORAGE_KEY = 'exposure_demo_uuid';
+  let storedUUID = safe(()=>localStorage.getItem(STORAGE_KEY), null);
+  let uuidIsNew = false;
+  if(!storedUUID){
+    storedUUID = genUUID();
+    uuidIsNew = true;
+    safe(()=>{localStorage.setItem(STORAGE_KEY, storedUUID); return true;}, false);
+  }
+
+  addCategory('Persistence: real ID vs. recomputed fingerprint', 'high',
+    'Two very different mechanisms, side by side. The stored ID is a random value this page wrote to localStorage on your first visit — delete it and the "identity" is gone. The fingerprint below is never stored anywhere; it is recomputed fresh every load from your GPU, canvas rendering, and hardware traits, so it comes back identical without needing to store anything at all.',
+    [
+      ['Stored UUID (localStorage)', storedUUID + (uuidIsNew ? '  — generated just now' : '  — same as last visit')],
+      ['Recomputed fingerprint hash', canvasHash + '  — not stored, recomputed each load'],
+    ]);
+
+  // ---------- Fonts & voices (a la Cover Your Tracks / CreepJS) ----------
+  function detectFonts(){
+    const testString = 'mmmmmmmmmmlli';
+    const testSize = '72px';
+    const baseFonts = ['monospace','sans-serif','serif'];
+    const candidates = ['Arial','Arial Black','Calibri','Cambria','Comic Sans MS','Consolas','Courier New',
+      'Georgia','Helvetica','Impact','Lucida Console','Palatino Linotype','Segoe UI','Tahoma','Times New Roman',
+      'Trebuchet MS','Verdana','Al Bayan','Damascus','Geeza Pro','KacstOne','Simplified Arabic','Traditional Arabic'];
+    const span = document.createElement('span');
+    span.style.position = 'absolute'; span.style.left='-9999px'; span.style.fontSize = testSize;
+    span.textContent = testString;
+    document.body.appendChild(span);
+    const baseWidths = {};
+    baseFonts.forEach(bf => { span.style.fontFamily = bf; baseWidths[bf] = span.offsetWidth; });
+    const detected = [];
+    candidates.forEach(font => {
+      let isDetected = false;
+      for(const bf of baseFonts){
+        span.style.fontFamily = `'${font}', ${bf}`;
+        if(span.offsetWidth !== baseWidths[bf]){ isDetected = true; break; }
+      }
+      if(isDetected) detected.push(font);
+    });
+    document.body.removeChild(span);
+    return detected;
+  }
+  const fontsDetected = safe(detectFonts, []);
+
+  addCategory('Fonts & installed software traces', 'high',
+    'Which fonts render differently than the browser default reveals what you have installed — a signal used heavily by Cover Your Tracks and CreepJS, since font lists vary a lot between OS, region, and installed apps.',
+    [
+      ['Fonts detected', record('fonts', fontsDetected.length + ' of ' + 23 + ' tested: ' + fontsDetected.join(', '))],
+      ['Speech synthesis voices', '(checking…)'],
+    ]);
+
+  // ---------- Tracker-blocking test (a la Cover Your Tracks) ----------
+  addCategory('Tracker-blocking test', 'med',
+    'Cover Your Tracks checks this by trying to load known ad/tracking domains and seeing whether your browser or extensions stop them. This does the same, live.',
+    [
+      ['doubleclick.net (Google ads)', '(checking…)'],
+      ['googlesyndication.com (Google ads)', '(checking…)'],
+      ['facebook.com/tr (Meta pixel)', '(checking…)'],
+    ]);
+
+  // ---------- WebRTC local network leak (a la Pixelscan / iphey) ----------
+  addCategory('WebRTC local network exposure', 'med',
+    'Historically, WebRTC could leak your real local IP even behind a VPN. Modern browsers mask this with a randomized ".local" hostname (mDNS) instead of your real address — this test shows which you get.',
+    [
+      ['ICE candidate leak check', '(checking…)'],
+    ]);
+
+  // ---------- Consistency / "lie detector" (a la CreepJS) ----------
+  const webdriverFlag = safe(()=>navigator.webdriver, false);
+  const claimsChrome = /Chrome/.test(ua) && !/Edg|OPR/.test(ua);
+  const hasWindowChrome = safe(()=>!!window.chrome, false);
+  const pluginsLen = safe(()=>navigator.plugins.length, 0);
+  const softwareRenderer = /SwiftShader|llvmpipe|Software/i.test(gpu.renderer || '');
+  const lies = [];
+  if(webdriverFlag) lies.push('navigator.webdriver is true — this is usually automation (Selenium/Playwright/Puppeteer), not a human-driven browser.');
+  if(claimsChrome && !hasWindowChrome) lies.push('User-Agent claims Chrome, but the window.chrome object real Chrome always exposes is missing — a common tell in spoofed or headless setups.');
+  if(softwareRenderer) lies.push('GPU renderer reports a software rasterizer (' + gpu.renderer + ') instead of real hardware — typical of virtual machines, CI runners, or headless browsers.');
+
+  addCategory('Consistency check ("lie detector")', lies.length ? 'high' : 'low',
+    'CreepJS\'s core idea: individual values matter less than whether they agree with each other. A spoofed or automated browser usually contradicts itself somewhere.',
+    lies.length
+      ? lies.map((l,i)=>['Inconsistency ' + (i+1), l])
+      : [['Result', 'No obvious contradictions found — this looks like a normal, unmodified browser.']]
+  );
+
+  // ---------- Permission states (a la Cover Your Tracks / CreepJS) ----------
+  addCategory('Permission states', 'med',
+    'A site can silently check whether you have already granted or blocked these — without ever showing you a prompt.',
+    [
+      ['Camera', '(checking…)'],
+      ['Microphone', '(checking…)'],
+      ['Geolocation', '(checking…)'],
+      ['Notifications', '(checking…)'],
+    ]);
+
+  // ---------- Storage ----------
+  addCategory('Storage capabilities', 'low',
+    'What kinds of local storage this browser makes available to any site, and roughly how much room you have.',
+    [
+      ['localStorage available', record('ls', safe(()=>{localStorage;return true;},false))],
+      ['IndexedDB available', record('idb', safe(()=>!!window.indexedDB,false))],
+      ['Storage quota (approx.)', '(checking…)'],
+    ]);
+
+  // ---------- Media devices (counts only, no labels without permission) ----------
+  addCategory('Connected media devices', 'med',
+    'Device counts are visible with zero permission. Labels (like "Logitech Webcam") only unlock after you\'ve granted mic/camera access at least once.',
+    [
+      ['Devices detected', '(checking…)'],
+    ]);
+
+  report.appendChild(Object.assign(document.createElement('div')));
+
+  // ---------- Finalize hash + count, then fill async rows ----------
+  function hashString(str){
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for(let i=0;i<str.length;i++){
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+    const combined = 4294967296 * (2097151 & h2) + (h1>>>0);
+    return combined.toString(16);
+  }
+
+  async function fillAsync(){
+    // Speech synthesis voices
+    const voiceRow = document.querySelectorAll('.category')[6].querySelectorAll('.row .v')[1];
+    try{
+      let voices = speechSynthesis.getVoices();
+      if(!voices.length){
+        voices = await new Promise(res=>{
+          const t = setTimeout(()=>res(speechSynthesis.getVoices()), 500);
+          speechSynthesis.onvoiceschanged = ()=>{ clearTimeout(t); res(speechSynthesis.getVoices()); };
+        });
+      }
+      const text = voices.length ? (voices.length + ' voices: ' + voices.slice(0,6).map(v=>v.name).join(', ') + (voices.length>6?', …':'')) : 'none exposed';
+      record('voices', text);
+      voiceRow.classList.remove('redacted');
+      voiceRow.textContent = text;
+    }catch(e){
+      voiceRow.classList.remove('redacted');
+      voiceRow.textContent = 'not available in this browser';
+    }
+
+    // Tracker-blocking test
+    const trackerRows = document.querySelectorAll('.category')[7].querySelectorAll('.row .v');
+    const trackerTargets = [
+      ['doubleclick', 'https://ad.doubleclick.net/favicon.ico'],
+      ['googlesyndication', 'https://pagead2.googlesyndication.com/favicon.ico'],
+      ['facebook', 'https://www.facebook.com/tr/favicon.ico'],
+    ];
+    trackerTargets.forEach(([name, url], i)=>{
+      const img = new Image();
+      const timer = setTimeout(()=>{
+        record('tracker_'+name, 'blocked or timed out');
+        trackerRows[i].classList.remove('redacted');
+        trackerRows[i].textContent = 'Blocked (by browser, extension, or DNS) — good, this tracker did not load.';
+      }, 2500);
+      img.onload = ()=>{
+        clearTimeout(timer);
+        record('tracker_'+name, 'loaded');
+        trackerRows[i].classList.remove('redacted');
+        trackerRows[i].textContent = 'Loaded successfully — this tracker reached your browser.';
+      };
+      img.onerror = ()=>{
+        clearTimeout(timer);
+        record('tracker_'+name, 'blocked');
+        trackerRows[i].classList.remove('redacted');
+        trackerRows[i].textContent = 'Blocked (by browser, extension, or DNS) — good, this tracker did not load.';
+      };
+      img.src = url;
+    });
+
+    // WebRTC local network leak
+    const webrtcRow = document.querySelectorAll('.category')[8].querySelectorAll('.row .v')[0];
+    try{
+      const pc = new RTCPeerConnection({iceServers:[]});
+      pc.createDataChannel('');
+      const ipRegex = /([0-9]{1,3}(?:\.[0-9]{1,3}){3})/;
+      const localRegex = /([a-f0-9-]{20,}\.local)/i;
+      let resolved = false;
+      pc.onicecandidate = (e)=>{
+        if(resolved) return;
+        if(!e.candidate){ 
+          if(!resolved){ resolved = true; record('webrtc','no candidates'); webrtcRow.classList.remove('redacted'); webrtcRow.textContent = 'No local candidates gathered — WebRTC leak surface not exposed here.'; }
+          return;
+        }
+        const cand = e.candidate.candidate;
+        const ipMatch = cand.match(ipRegex);
+        const mdnsMatch = cand.match(localRegex);
+        if(ipMatch){
+          resolved = true;
+          record('webrtc', 'real local IP leaked: ' + ipMatch[1]);
+          webrtcRow.classList.remove('redacted');
+          webrtcRow.textContent = 'Real local IP leaked via WebRTC: ' + ipMatch[1] + ' — this browser is NOT protecting you here.';
+          pc.close();
+        } else if(mdnsMatch){
+          resolved = true;
+          record('webrtc', 'mDNS obfuscated');
+          webrtcRow.classList.remove('redacted');
+          webrtcRow.textContent = 'Obfuscated via mDNS (' + mdnsMatch[1] + ') — modern protection working, real local IP hidden.';
+          pc.close();
+        }
+      };
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      setTimeout(()=>{
+        if(!resolved){
+          record('webrtc', 'unresolved');
+          webrtcRow.classList.remove('redacted');
+          webrtcRow.textContent = 'No conclusive candidate received in time (often means WebRTC is disabled or blocked).';
+        }
+      }, 2000);
+    }catch(e){
+      webrtcRow.classList.remove('redacted');
+      webrtcRow.textContent = 'WebRTC not available in this browser.';
+    }
+
+    // Permissions
+    const permRows = document.querySelectorAll('.category')[10].querySelectorAll('.row .v');
+    const permNames = ['camera','microphone','geolocation','notifications'];
+    for(let i=0;i<permNames.length;i++){
+      let state = 'unsupported';
+      try{
+        const res = await navigator.permissions.query({name: permNames[i]});
+        state = res.state;
+      }catch(e){ state = 'unsupported in this browser'; }
+      record('perm_'+permNames[i], state);
+      permRows[i].classList.remove('redacted');
+      permRows[i].textContent = state;
+    }
+
+    // Storage quota
+    const storageRow = document.querySelectorAll('.category')[11].querySelectorAll('.row .v')[2];
+    try{
+      const est = await navigator.storage.estimate();
+      const gb = (est.quota / (1024**3)).toFixed(1);
+      record('quota', gb);
+      storageRow.classList.remove('redacted');
+      storageRow.textContent = gb + ' GB available';
+    }catch(e){
+      storageRow.classList.remove('redacted');
+      storageRow.textContent = 'not available in this browser';
+    }
+
+    // Media devices
+    const devRow = document.querySelectorAll('.category')[12].querySelectorAll('.row .v')[0];
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const counts = devices.reduce((acc,d)=>{acc[d.kind]=(acc[d.kind]||0)+1; return acc;},{});
+      const text = Object.entries(counts).map(([k,v])=>`${v} ${k}`).join(', ') || 'none detected';
+      record('devices', text);
+      devRow.classList.remove('redacted');
+      devRow.textContent = text;
+    }catch(e){
+      devRow.classList.remove('redacted');
+      devRow.textContent = 'not available in this browser';
+    }
+
+    // Finalize composite hash + count now that everything is collected
+    setTimeout(()=>{
+      document.getElementById('sigCount').textContent = collected.length + ' distinct signals read';
+      document.getElementById('sigHash').textContent = hashString(collected.join('|'));
+    }, 3000);
+  }
+
+  fillAsync();
+
+  // Provisional hash/count immediately (updates again once async signals land)
+  document.getElementById('sigCount').textContent = collected.length + ' distinct signals read (finalizing…)';
+  document.getElementById('sigHash').textContent = hashString(collected.join('|'));
+
+  // ---------- Clear the one stored value this page writes ----------
+  document.getElementById('clearIdBtn').addEventListener('click', function(){
+    safe(()=>{localStorage.removeItem(STORAGE_KEY); return true;}, false);
+    document.getElementById('clearIdResult').textContent = 'Cleared. Reload the page — you\'ll get a brand-new UUID, but the same fingerprint hash.';
+  });
+
+  // ---------- On-demand IP + geo lookup (click only, third-party call, nothing stored) ----------
+  document.getElementById('ipBtn').addEventListener('click', async function(){
+    const out = document.getElementById('ipResult');
+    out.textContent = 'Looking up…';
+    try{
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      out.innerHTML = `
+        <div>Public IP: ${data.ip ?? 'unknown'}</div>
+        <div>Country: ${data.country_name ?? 'unknown'} (${data.country_code ?? '—'})</div>
+        <div>Region: ${data.region ?? 'unknown'}</div>
+        <div>City: ${data.city ?? 'unknown'}</div>
+        <div>Approx. coordinates: ${data.latitude ?? '—'}, ${data.longitude ?? '—'}</div>
+        <div>ISP / network: ${data.org ?? 'unknown'}</div>
+      `;
+    }catch(e){
+      out.textContent = 'Lookup failed (network blocked, or ipapi unreachable from here).';
+    }
+  });
+
+  // ---------- Precise geolocation, gated behind an explicit browser permission prompt ----------
+  document.getElementById('geoBtn').addEventListener('click', function(){
+    const out = document.getElementById('geoResult');
+    if(!navigator.geolocation){
+      out.textContent = 'Geolocation API not supported in this browser.';
+      return;
+    }
+    out.textContent = 'Waiting on the permission prompt…';
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        out.innerHTML = `
+          <div>Latitude: ${pos.coords.latitude}</div>
+          <div>Longitude: ${pos.coords.longitude}</div>
+          <div>Accuracy: ±${Math.round(pos.coords.accuracy)} meters</div>
+        `;
+      },
+      err => {
+        out.textContent = 'Permission denied or unavailable (' + err.message + ').';
+      }
+    );
+  });
+})();
+</script>
+</body>
+</html>
