@@ -74,12 +74,12 @@
     border:1px solid var(--border);
     border-radius:var(--radius);
     padding:24px 28px;
-    display:flex;
-    flex-wrap:wrap;
-    gap:32px;
-    align-items:center;
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+    gap:20px 32px;
     box-shadow:0 1px 3px rgba(20,23,31,0.04);
   }
+  .signature .stat{ min-width:0; }
   .signature .label{
     font-size:11px;
     letter-spacing:0.08em;
@@ -90,7 +90,7 @@
   }
   .signature .hash{
     font-family:var(--mono);
-    font-size:19px;
+    font-size:16px;
     color:var(--accent);
     letter-spacing:0.01em;
     word-break:break-all;
@@ -98,14 +98,9 @@
   }
   .signature .count{
     font-family:var(--mono);
-    font-size:19px;
+    font-size:16px;
     color:var(--ink);
     font-weight:600;
-  }
-  .signature .divider-v{
-    width:1px;
-    align-self:stretch;
-    background:var(--border);
   }
   .note-inline{
     font-size:12px;
@@ -132,6 +127,7 @@
     display:flex;
     flex-direction:column;
   }
+  #card-ip-network{ order:-1; }
   .cat-head{
     display:flex;
     align-items:flex-start;
@@ -264,18 +260,28 @@
   <p class="lede">No login, no cookies, no permission prompts for most of it. This mirrors the categories used by commercial fingerprinting/anti-fraud tools — each card below is a real signal read straight from your browser right now.</p>
 
   <div class="signature">
-    <div>
+    <div class="stat">
       <div class="label">Visitor ID (session fingerprint)</div>
       <div class="hash" id="sigHash">computing…</div>
     </div>
-    <div class="divider-v"></div>
-    <div>
+    <div class="stat">
+      <div class="label">Stored UUID (localStorage)</div>
+      <div class="hash" id="statUUID">computing…</div>
+    </div>
+    <div class="stat">
+      <div class="label">Public IP</div>
+      <div class="hash" id="statIP">looking up…</div>
+    </div>
+    <div class="stat">
+      <div class="label">Approx. location</div>
+      <div class="hash" id="statLocation">looking up…</div>
+    </div>
+    <div class="stat">
       <div class="label">Signals collected</div>
       <div class="count" id="sigCount">counting…</div>
     </div>
   </div>
-  <p class="note-inline">This ID is derived only from values shown below. It is not stored, logged, or transmitted — reload the page and it's gone.</p>
-  <p class="note-inline">Exception: the "Persistence" card further down deliberately writes one value to localStorage, clearly labeled, so you can see the difference between a real stored ID and a recomputed fingerprint. Nothing else on this page touches storage.</p>
+  <p class="note-inline">The Visitor ID and signal count are derived only from values shown below and are never stored. The UUID is deliberately written to localStorage so you can compare a real stored identifier against a recomputed fingerprint — see the "Persistence" card. IP/location come from a third-party lookup that fires automatically on load, same as any site would see it. Nothing on this page is logged or sent anywhere else.</p>
 </div>
 
 <div class="wrap" id="report"></div>
@@ -287,29 +293,13 @@
     <button id="clearIdBtn">Clear stored UUID</button>
     <div class="ip-result" id="clearIdResult"></div>
   </div>
-  <div class="ip-box">
-    <div style="margin-bottom:8px;">Your IP address is <em>not</em> readable by JavaScript — but it's visible to every server you talk to on every request, automatically, the moment you connect. From IP alone, any server can also look up your approximate <strong>country, region, and city</strong> (this is how sites geo-target ads or content with zero permission prompt). This page doesn't log it. If you want to see what a typical server-side log would capture, you can check on demand:</div>
-    <button id="ipBtn">Check my public IP + approximate location (calls a third-party lookup, on click only)</button>
-    <div class="ip-result" id="ipResult"></div>
-  </div>
-
-  <div class="ip-box" style="margin-top:20px;">
-    <div style="margin-bottom:8px;">A few more browser APIs exist but require you to actively pick something from a native browser chooser, or grant a one-off permission — none of these run without your click, and each opens the browser's own dialog, not anything this page controls.</div>
-    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;">
-      <button id="clipBtn">Read clipboard</button>
-      <button id="btBtn">Choose Bluetooth device</button>
-      <button id="usbBtn">Choose USB device</button>
-      <button id="idleBtn">Check idle state</button>
-    </div>
-    <div class="ip-result" id="deviceResult"></div>
-  </div>
 
   <div class="ip-box" style="margin-top:20px;">
     <div style="margin-bottom:8px;">Precise GPS-level location is a different story: it's <strong>not</strong> silently available. The browser must show you an explicit permission prompt, and nothing is read until you click "Allow." This button demonstrates that consented path — no data leaves this tab.</div>
     <button id="geoBtn">Request precise location (will show a browser permission prompt)</button>
     <div class="ip-result" id="geoResult"></div>
   </div>
-  <p class="mono" style="margin-top:28px;">No authentication. No cookies set. No data transmitted by this page except the on-demand third-party IP/geo lookup and native device choosers above, both of which run only after your click. View source any time.</p>
+  <p class="mono" style="margin-top:28px;">No authentication. No cookies set. The IP/network card at the top queries a third-party service (ipwho.is) automatically on load. The precise-location button is the only thing gated behind an explicit permission prompt. View source any time.</p>
 </footer>
 
 <script>
@@ -350,12 +340,14 @@
     'Connected media devices': '🎙️',
     'Advanced hardware & sensors': '🧩',
     'Client Hints & platform consistency': '🧾',
+    'Public IP & network': '📍',
   };
 
   let rowDelay = 0;
-  function addCategory(title, risk, desc, rows){
+  function addCategory(title, risk, desc, rows, id){
     const sec = document.createElement('section');
     sec.className = 'category';
+    if(id) sec.id = id;
     const icon = CATEGORY_ICONS[title] || '📶';
     sec.innerHTML = `
       <div class="cat-head">
@@ -479,6 +471,7 @@
     uuidIsNew = true;
     safe(()=>{localStorage.setItem(STORAGE_KEY, storedUUID); return true;}, false);
   }
+  safe(()=>{ document.getElementById('statUUID').textContent = storedUUID; return true; }, false);
 
   addCategory('Persistence: real ID vs. recomputed fingerprint', 'high',
     'Two very different mechanisms, side by side. The stored ID is a random value this page wrote to localStorage on your first visit — delete it and the "identity" is gone. The fingerprint below is never stored anywhere; it is recomputed fresh every load from your GPU, canvas rendering, and hardware traits, so it comes back identical without needing to store anything at all.',
@@ -558,12 +551,14 @@
 
   // ---------- Permission states (a la Cover Your Tracks / CreepJS) ----------
   addCategory('Permission states', 'med',
-    'A site can silently check whether you have already granted or blocked these — without ever showing you a prompt.',
+    'A site can silently check whether you have already granted or blocked these — without ever showing you a prompt. Where permission is already granted, the actual value is shown below too.',
     [
       ['Camera', '(checking…)'],
       ['Microphone', '(checking…)'],
       ['Geolocation', '(checking…)'],
       ['Notifications', '(checking…)'],
+      ['Clipboard read', '(checking…)'],
+      ['Bluetooth / USB device access', 'No silent check exists — browsers require a one-time device-picker click for these by design, so there\'s nothing to show without it.'],
     ]);
 
   // ---------- Storage ----------
@@ -622,6 +617,19 @@
       ['High-entropy details (arch/model/version)', '(checking…)'],
       ['DevTools open (heuristic)', record('devtools', devtoolsOpen)],
     ]);
+
+  // ---------- Public IP & network (shown as the first card via CSS order, added last so other indices stay stable) ----------
+  addCategory('Public IP & network', 'high',
+    'Not readable by JavaScript at all — but visible to every server you talk to on every request, automatically, the moment you connect. This queries a third-party lookup (ipwho.is) on load to show exactly what a typical server-side log would capture about you.',
+    [
+      ['Public IP', '(looking up…)'],
+      ['Country', '(looking up…)'],
+      ['Region', '(looking up…)'],
+      ['City', '(looking up…)'],
+      ['Approx. coordinates', '(looking up…)'],
+      ['ISP / network', '(looking up…)'],
+    ],
+    'card-ip-network');
 
   report.appendChild(Object.assign(document.createElement('div')));
 
@@ -745,6 +753,30 @@
       record('perm_'+permNames[i], state);
       permRows[i].classList.remove('redacted');
       permRows[i].textContent = state;
+    }
+
+    // Clipboard read permission — silent check, and if already granted, show the actual value
+    try{
+      let clipState = 'unsupported';
+      try{
+        const res = await navigator.permissions.query({name: 'clipboard-read'});
+        clipState = res.state;
+      }catch(e){ clipState = 'unsupported in this browser'; }
+      let text = clipState;
+      if(clipState === 'granted'){
+        try{
+          const clip = await navigator.clipboard.readText();
+          text = clip ? ('granted — contains: "' + clip.slice(0,80) + (clip.length>80?'…':'') + '"') : 'granted — clipboard is empty';
+        }catch(e){
+          text = 'granted (but read failed: ' + e.message + ')';
+        }
+      }
+      record('perm_clipboard', text);
+      permRows[4].classList.remove('redacted');
+      permRows[4].textContent = text;
+    }catch(e){
+      permRows[4].classList.remove('redacted');
+      permRows[4].textContent = 'not available in this browser';
     }
 
     // Storage quota
@@ -877,72 +909,40 @@
     document.getElementById('clearIdResult').textContent = 'Cleared. Reload the page — you\'ll get a brand-new UUID, but the same fingerprint hash.';
   });
 
-  // ---------- Permission-gated device access (click only, native browser dialogs) ----------
-  document.getElementById('clipBtn').addEventListener('click', async function(){
-    const out = document.getElementById('deviceResult');
-    try{
-      const text = await navigator.clipboard.readText();
-      out.textContent = text ? ('Clipboard contains: "' + text.slice(0,80) + (text.length>80?'…':'') + '"') : 'Clipboard is empty.';
-    }catch(e){
-      out.textContent = 'Clipboard read blocked or denied (' + e.message + ').';
-    }
-  });
-
-  document.getElementById('btBtn').addEventListener('click', async function(){
-    const out = document.getElementById('deviceResult');
-    try{
-      if(!navigator.bluetooth){ out.textContent = 'Web Bluetooth not supported in this browser.'; return; }
-      const device = await navigator.bluetooth.requestDevice({acceptAllDevices:true});
-      out.textContent = 'Selected Bluetooth device: ' + (device.name || '(unnamed device)') + ' — id: ' + device.id;
-    }catch(e){
-      out.textContent = 'No device chosen, or Bluetooth unavailable (' + e.message + ').';
-    }
-  });
-
-  document.getElementById('usbBtn').addEventListener('click', async function(){
-    const out = document.getElementById('deviceResult');
-    try{
-      if(!navigator.usb){ out.textContent = 'WebUSB not supported in this browser.'; return; }
-      const device = await navigator.usb.requestDevice({filters:[]});
-      out.textContent = 'Selected USB device: ' + (device.productName || 'unnamed') + ' (vendor ' + device.vendorId + ', product ' + device.productId + ')';
-    }catch(e){
-      out.textContent = 'No device chosen, or WebUSB unavailable (' + e.message + ').';
-    }
-  });
-
-  document.getElementById('idleBtn').addEventListener('click', async function(){
-    const out = document.getElementById('deviceResult');
-    try{
-      if(!('IdleDetector' in window)){ out.textContent = 'Idle Detection API not supported in this browser.'; return; }
-      const state = await IdleDetector.requestPermission();
-      if(state !== 'granted'){ out.textContent = 'Idle detection permission denied.'; return; }
-      const detector = new IdleDetector();
-      await detector.start({threshold: 60000});
-      out.textContent = 'User state: ' + detector.userState + ', screen state: ' + detector.screenState;
-    }catch(e){
-      out.textContent = 'Idle detection failed or unsupported (' + e.message + ').';
-    }
-  });
-
-  // ---------- On-demand IP + geo lookup (click only, third-party call, nothing stored) ----------
-  document.getElementById('ipBtn').addEventListener('click', async function(){
-    const out = document.getElementById('ipResult');
-    out.textContent = 'Looking up…';
+  // ---------- Automatic IP + geo lookup (fires on load, third-party call, nothing stored) ----------
+  (async function(){
+    const statIP = document.getElementById('statIP');
+    const statLocation = document.getElementById('statLocation');
+    const cardRows = document.getElementById('card-ip-network').querySelectorAll('.row .v');
     try{
       const res = await fetch('https://ipwho.is/');
       const data = await res.json();
-      out.innerHTML = `
-        <div>Public IP: ${data.ip ?? 'unknown'}</div>
-        <div>Country: ${data.country ?? 'unknown'} (${data.country_code ?? '—'})</div>
-        <div>Region: ${data.region ?? 'unknown'}</div>
-        <div>City: ${data.city ?? 'unknown'}</div>
-        <div>Approx. coordinates: ${data.latitude ?? '—'}, ${data.longitude ?? '—'}</div>
-        <div>ISP / network: ${data.connection?.isp ?? 'unknown'}</div>
-      `;
+      const values = [
+        data.ip ?? 'unknown',
+        `${data.country ?? 'unknown'} (${data.country_code ?? '—'})`,
+        data.region ?? 'unknown',
+        data.city ?? 'unknown',
+        `${data.latitude ?? '—'}, ${data.longitude ?? '—'}`,
+        data.connection?.isp ?? 'unknown',
+      ];
+      values.forEach((v,i)=>{
+        cardRows[i].classList.remove('redacted');
+        cardRows[i].textContent = v;
+      });
+      record('ip', values[0]);
+      record('ip_country', values[1]);
+      record('ip_region', values[2]);
+      record('ip_city', values[3]);
+      record('ip_coords', values[4]);
+      record('ip_isp', values[5]);
+      statIP.textContent = data.ip ?? 'unknown';
+      statLocation.textContent = [data.city, data.country].filter(Boolean).join(', ') || 'unknown';
     }catch(e){
-      out.textContent = 'Lookup failed (network blocked, or ipwho.is unreachable from here).';
+      cardRows.forEach(r=>{ r.classList.remove('redacted'); r.textContent = 'Lookup failed (network blocked, or ipwho.is unreachable from here).'; });
+      statIP.textContent = 'lookup failed';
+      statLocation.textContent = 'lookup failed';
     }
-  });
+  })();
 
   // ---------- Precise geolocation, gated behind an explicit browser permission prompt ----------
   document.getElementById('geoBtn').addEventListener('click', function(){
