@@ -117,6 +117,7 @@
     display:grid;
     grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
     gap:16px;
+    align-items:start;
   }
   section.category{
     background:var(--card);
@@ -127,7 +128,10 @@
     display:flex;
     flex-direction:column;
   }
+  section.category{ order:1; }
   #card-ip-network{ order:-1; }
+  #card-browser-session{ order:0; }
+  #card-mobile-sensors{ order:0; }
   .cat-head{
     display:flex;
     align-items:flex-start;
@@ -308,6 +312,11 @@
     <button id="geoBtn">Request precise location (will show a browser permission prompt)</button>
     <div class="ip-result" id="geoResult"></div>
   </div>
+  <div class="ip-box" style="margin-top:20px;">
+    <div style="margin-bottom:8px;" id="txtMotionNote">On iOS, reading actual motion/orientation sensor values needs an explicit one-time permission tap — Apple enforces this at the OS level. On Android and desktop, this reads immediately since no permission is required there.</div>
+    <button id="motionBtn">Read motion & orientation sensors</button>
+    <div class="ip-result" id="motionResult"></div>
+  </div>
   <p class="mono" style="margin-top:28px;" id="txtFinalNote">No authentication. No cookies set. The IP/network card at the top queries a third-party service (ipwho.is) automatically on load. The precise-location button is the only thing gated behind an explicit permission prompt. View source any time.</p>
 </footer>
 
@@ -351,8 +360,11 @@
     'Advanced hardware & sensors': 'العتاد والحساسات المتقدمة',
     'Client Hints & platform consistency': 'تلميحات العميل واتساق المنصة',
     'Public IP & network': 'عنوان IP العام والشبكة',
+    'Mobile & sensor signals': 'إشارات الجوال والحساسات',
 
     // Category descriptions
+    'Signals that matter most on phones and tablets — Client Hints\' mobile flag, installed-app mode, network quality hints, and which motion/orientation sensors this device exposes. On iOS, reading actual sensor data requires an extra one-time permission tap (below), which is the platform enforcing consent — everything else here is silent.':
+      'الإشارات الأكثر أهمية على الهواتف والأجهزة اللوحية — علامة الجوال من تلميحات العميل، وضع التطبيق المثبَّت، تلميحات جودة الشبكة، وأي حساسات حركة/اتجاه يكشفها هذا الجهاز. على iOS، تتطلب قراءة بيانات الحساسات الفعلية ضغطة إذن إضافية لمرة واحدة (أدناه)، وهو ما يفرضه النظام نفسه — كل شيء آخر هنا صامت.',
     'Sent automatically on every request you make, to every site, before any script even runs.':
       'تُرسَل تلقائيًا مع كل طلب تقوم به، إلى كل موقع، حتى قبل تشغيل أي سكربت.',
     'Rough hardware characteristics, readable without any permission prompt.':
@@ -446,6 +458,15 @@
     'City': 'المدينة',
     'Approx. coordinates': 'الإحداثيات التقريبية',
     'ISP / network': 'مزود الخدمة / الشبكة',
+    'Mobile device (Client Hints)': 'جهاز جوال (تلميحات العميل)',
+    'Installed / standalone app mode': 'وضع التطبيق المثبَّت / المستقل',
+    'Data-saver preference enabled': 'تفضيل توفير البيانات مفعّل',
+    'Network round-trip time (ms)': 'زمن الرحلة ذهابًا وإيابًا للشبكة (مللي ثانية)',
+    'Vibration API supported': 'دعم واجهة الاهتزاز',
+    'Web Share API supported': 'دعم واجهة المشاركة',
+    'Screen-orientation lock supported': 'دعم قفل اتجاه الشاشة',
+    'Motion/orientation sensors available': 'حساسات الحركة/الاتجاه المتاحة',
+    'Ambient light sensor': 'حساس الإضاءة المحيطة',
 
     // Risk badges
     'High signal': 'إشارة عالية',
@@ -462,6 +483,9 @@
     'Precise GPS-level location is a different story: it\'s not silently available. The browser must show you an explicit permission prompt, and nothing is read until you click "Allow." This button demonstrates that consented path — no data leaves this tab.':
       'الموقع الدقيق عبر GPS قصة مختلفة: فهو غير متاح بصمت. يجب أن يعرض المتصفح طلب إذن صريحًا، ولا يُقرأ شيء حتى تضغط "السماح". يوضح هذا الزر ذلك المسار القائم على الموافقة — لا تغادر أي بيانات هذا التبويب.',
     'Request precise location (will show a browser permission prompt)': 'طلب الموقع الدقيق (سيعرض المتصفح طلب إذن)',
+    'On iOS, reading actual motion/orientation sensor values needs an explicit one-time permission tap — Apple enforces this at the OS level. On Android and desktop, this reads immediately since no permission is required there.':
+      'على iOS، تتطلب قراءة قيم حساسات الحركة/الاتجاه الفعلية ضغطة إذن صريحة لمرة واحدة — تفرض آبل ذلك على مستوى النظام. أما على أندرويد وسطح المكتب، فتُقرأ فورًا لأن الإذن غير مطلوب هناك.',
+    'Read motion & orientation sensors': 'قراءة حساسات الحركة والاتجاه',
     'No authentication. No cookies set. The IP/network card at the top queries a third-party service (ipwho.is) automatically on load. The precise-location button is the only thing gated behind an explicit permission prompt. View source any time.':
       'بدون مصادقة. بدون كوكيز. تستعلم بطاقة IP/الشبكة أعلى الصفحة من خدمة خارجية (ipwho.is) تلقائيًا عند التحميل. زر الموقع الدقيق هو الشيء الوحيد المقيَّد بطلب إذن صريح. يمكنك عرض المصدر في أي وقت.',
   };
@@ -482,13 +506,14 @@
     txtExcludedLabel: 'Deliberately excluded:',
     clearIdBtn: 'Clear stored UUID',
     geoBtn: 'Request precise location (will show a browser permission prompt)',
+    motionBtn: 'Read motion & orientation sensors',
   };
   Object.entries(staticEls).forEach(([id, en])=>{
     const el = document.getElementById(id);
     if(el) el.textContent = t(en);
   });
   // Elements whose original English text IS the dictionary key (read then translate, to avoid re-typing long strings)
-  ['txtLede','txtNote','txtExcludedRest','txtPersistNote','txtGeoNote','txtFinalNote'].forEach(id=>{
+  ['txtLede','txtNote','txtExcludedRest','txtPersistNote','txtGeoNote','txtMotionNote','txtFinalNote'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.textContent = t(el.textContent);
   });
@@ -510,7 +535,7 @@
   // Signals that stay constant across reloads/sessions on the same device —
   // deliberately excludes anything network-, session-, or setting-dependent
   // (IP/location, timezone, permission grants, tracker-blocking, WebRTC/network state, clipboard, DevTools).
-  const STABLE_KEYS = ['cpu','mem','touch','scr','scra','depth','dpr','gpuv','gpur','canvas','fonts','wasm','kbd','chplatform','chbrands','ch_hi','heap','pointer','hover'];
+  const STABLE_KEYS = ['cpu','mem','touch','scr','scra','depth','dpr','gpuv','gpur','canvas','fonts','wasm','kbd','chplatform','chbrands','ch_hi','heap','pointer','hover','mobile','vibrate','share','orientlock','motion','ambient'];
 
   function record(key, value){
     collected.push(key + '::' + String(value));
@@ -547,6 +572,7 @@
     'Advanced hardware & sensors': '🧩',
     'Client Hints & platform consistency': '🧾',
     'Public IP & network': '📍',
+    'Mobile & sensor signals': '📱',
   };
 
   let rowDelay = 0;
@@ -592,7 +618,8 @@
       ['Do Not Track signal', record('dnt', safe(()=>navigator.doNotTrack ?? 'not set',''))],
       ['PDF viewer built in', record('pdf', safe(()=>navigator.pdfViewerEnabled,''))],
       ['Referrer that brought you here', record('ref', safe(()=>document.referrer || '(direct / no referrer)',''))],
-    ]);
+    ],
+    'card-browser-session');
 
   // ---------- Hardware ----------
   addCategory('Hardware signals', 'med',
@@ -837,7 +864,34 @@
     ],
     'card-ip-network');
 
-  report.appendChild(Object.assign(document.createElement('div')));
+  // ---------- Mobile & sensor signals ----------
+  const mobileFlag = safe(()=>navigator.userAgentData.mobile, '');
+  const standaloneMode = safe(()=>matchMedia('(display-mode: standalone)').matches, false);
+  const saveData = safe(()=>navigator.connection.saveData, '');
+  const rtt = safe(()=>navigator.connection.rtt, '');
+  const vibrationSupport = safe(()=>!!navigator.vibrate, false);
+  const shareSupport = safe(()=>!!navigator.share, false);
+  const orientLockSupport = safe(()=>!!(screen.orientation && screen.orientation.lock), false);
+  const motionAvailable = safe(()=>typeof DeviceOrientationEvent !== 'undefined' || typeof DeviceMotionEvent !== 'undefined', false);
+  const motionNeedsPermission = safe(()=>typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function', false);
+  const ambientLight = safe(()=>typeof AmbientLightSensor !== 'undefined', false);
+
+  addCategory('Mobile & sensor signals', 'high',
+    'Signals that matter most on phones and tablets — Client Hints\' mobile flag, installed-app mode, network quality hints, and which motion/orientation sensors this device exposes. On iOS, reading actual sensor data requires an extra one-time permission tap (below), which is the platform enforcing consent — everything else here is silent.',
+    [
+      ['Mobile device (Client Hints)', record('mobile', mobileFlag)],
+      ['Installed / standalone app mode', record('standalone', standaloneMode)],
+      ['Data-saver preference enabled', record('savedata', saveData)],
+      ['Network round-trip time (ms)', record('rtt', rtt)],
+      ['Vibration API supported', record('vibrate', vibrationSupport)],
+      ['Web Share API supported', record('share', shareSupport)],
+      ['Screen-orientation lock supported', record('orientlock', orientLockSupport)],
+      ['Motion/orientation sensors available', record('motion', motionAvailable + (motionNeedsPermission ? ' (needs a tap to grant permission — see below)' : ''))],
+      ['Ambient light sensor', record('ambient', ambientLight)],
+    ],
+    'card-mobile-sensors');
+
+
 
   // ---------- Finalize hash + count, then fill async rows ----------
   function hashString(str){
@@ -1173,6 +1227,41 @@
         out.textContent = 'Permission denied or unavailable (' + err.message + ').';
       }
     );
+  });
+
+  // ---------- Motion/orientation sensor reading, permission-gated on iOS only ----------
+  document.getElementById('motionBtn').addEventListener('click', async function(){
+    const out = document.getElementById('motionResult');
+    out.textContent = 'Waiting for a sensor reading…';
+    try{
+      if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
+        const state = await DeviceMotionEvent.requestPermission();
+        if(state !== 'granted'){ out.textContent = 'Motion sensor permission denied.'; return; }
+      }
+      if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+        const state2 = await DeviceOrientationEvent.requestPermission();
+        if(state2 !== 'granted'){ out.textContent = 'Orientation sensor permission denied.'; return; }
+      }
+      if(typeof DeviceOrientationEvent === 'undefined' && typeof DeviceMotionEvent === 'undefined'){
+        out.textContent = 'No motion/orientation sensors available on this device.';
+        return;
+      }
+      let gotReading = false;
+      const timeout = setTimeout(()=>{
+        if(!gotReading) out.textContent = 'No sensor reading received (likely a desktop with no physical sensors).';
+      }, 2500);
+      const orientHandler = (e)=>{
+        gotReading = true;
+        clearTimeout(timeout);
+        out.innerHTML = `
+          <div>Orientation — alpha: ${e.alpha?.toFixed(1) ?? '—'}°, beta: ${e.beta?.toFixed(1) ?? '—'}°, gamma: ${e.gamma?.toFixed(1) ?? '—'}°</div>
+        `;
+        window.removeEventListener('deviceorientation', orientHandler);
+      };
+      window.addEventListener('deviceorientation', orientHandler, {once:true});
+    }catch(e){
+      out.textContent = 'Sensor read failed or unsupported (' + e.message + ').';
+    }
   });
 })();
 </script>
