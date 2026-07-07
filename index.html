@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exposure Report — what this tab already knows</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#F5F6F8;
@@ -23,7 +23,7 @@
     --bad:#B4232C;
     --bad-bg:#FDEAEA;
     --mono: 'IBM Plex Mono', monospace;
-    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --sans: 'Inter', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
     --radius: 14px;
   }
   *{box-sizing:border-box;}
@@ -247,6 +247,8 @@
   .ip-result{margin-top:10px; color:var(--ink); font-family:var(--mono); font-size:12.5px;}
 
   :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  [dir="rtl"] body{ line-height:1.75; }
+  [dir="rtl"] .cat-desc, [dir="rtl"] .lede, [dir="rtl"] .note-inline{ line-height:1.8; }
   @media (prefers-reduced-motion: reduce){
     .v.redacted::before{ animation: none; opacity:0; }
   }
@@ -255,59 +257,252 @@
 <body>
 
 <div class="hero">
-  <p class="eyebrow">Device Intelligence Playground</p>
-  <h1>See every signal this browser exposes, live</h1>
-  <p class="lede">No login, no cookies, no permission prompts for most of it. This mirrors the categories used by commercial fingerprinting/anti-fraud tools — each card below is a real signal read straight from your browser right now.</p>
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+    <p class="eyebrow" id="txtEyebrow">Device Intelligence Playground</p>
+    <button id="langToggle" style="font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600; background:#EEF1FF; color:#3B5BFF; border:1px solid transparent; border-radius:8px; padding:8px 14px; cursor:pointer; white-space:nowrap;"></button>
+  </div>
+  <h1 id="txtH1">See every signal this browser exposes, live</h1>
+  <p class="lede" id="txtLede">No login, no cookies, no permission prompts for most of it. This mirrors the categories used by commercial fingerprinting/anti-fraud tools — each card below is a real signal read straight from your browser right now.</p>
 
   <div class="signature">
     <div class="stat">
-      <div class="label">Visitor ID (session fingerprint)</div>
+      <div class="label" id="lblVisitorId">Visitor ID (session fingerprint)</div>
       <div class="hash" id="sigHash">computing…</div>
     </div>
     <div class="stat">
-      <div class="label">Stable device hash (hardware/software only)</div>
+      <div class="label" id="lblStableHash">Stable device hash (hardware/software only)</div>
       <div class="hash" id="stableHash">computing…</div>
     </div>
     <div class="stat">
-      <div class="label">Stored UUID (localStorage)</div>
+      <div class="label" id="lblUUID">Stored UUID (localStorage)</div>
       <div class="hash" id="statUUID">computing…</div>
     </div>
     <div class="stat">
-      <div class="label">Public IP</div>
+      <div class="label" id="lblIP">Public IP</div>
       <div class="hash" id="statIP">looking up…</div>
     </div>
     <div class="stat">
-      <div class="label">Approx. location</div>
+      <div class="label" id="lblLocation">Approx. location</div>
       <div class="hash" id="statLocation">looking up…</div>
     </div>
     <div class="stat">
-      <div class="label">Signals collected</div>
+      <div class="label" id="lblSignals">Signals collected</div>
       <div class="count" id="sigCount">counting…</div>
     </div>
   </div>
-  <p class="note-inline">The Visitor ID and signal count are derived only from values shown below and are never stored. The Stable device hash uses only hardware/rendering signals that don't change across sessions (GPU, canvas, fonts, screen, CPU) — deliberately excluding IP, timezone, permissions, and other things that vary by network or setting. The UUID is deliberately written to localStorage so you can compare a real stored identifier against a recomputed fingerprint — see the "Persistence" card. IP/location come from a third-party lookup that fires automatically on load, same as any site would see it. Nothing on this page is logged or sent anywhere else.</p>
+  <p class="note-inline" id="txtNote">The Visitor ID and signal count are derived only from values shown below and are never stored. The Stable device hash uses only hardware/rendering signals that don't change across sessions (GPU, canvas, fonts, screen, CPU) — deliberately excluding IP, timezone, permissions, and other things that vary by network or setting. The UUID is deliberately written to localStorage so you can compare a real stored identifier against a recomputed fingerprint — see the "Persistence" card. IP/location come from a third-party lookup that fires automatically on load, same as any site would see it. Nothing on this page is logged or sent anywhere else.</p>
 </div>
 
 <div class="wrap" id="report"></div>
 
 <footer>
-  <p><strong>Deliberately excluded:</strong> this report does not collect or display cookies, any persistent machine/device identifier, your MAC address (no browser can read this — it's not a gap, it's a hard OS/network boundary), or OS-version detail from your user-agent string (redacted below on request).</p>
+  <p><strong id="txtExcludedLabel">Deliberately excluded:</strong> <span id="txtExcludedRest">this report does not collect or display cookies, any persistent machine/device identifier, your MAC address (no browser can read this — it's not a gap, it's a hard OS/network boundary), or OS-version detail from your user-agent string (redacted below on request).</span></p>
   <div class="ip-box" style="margin-bottom:20px;">
-    <div style="margin-bottom:8px;">Reload this page a few times: the stored UUID above stays put because it's sitting in localStorage. Clear it here, then reload — it'll be regenerated as a brand-new value, because there's nothing real backing it. The fingerprint hash next to it, meanwhile, will come back <em>identical</em> every time, unprompted, because it's derived from your actual hardware rather than anything stored.</div>
+    <div style="margin-bottom:8px;" id="txtPersistNote">Reload this page a few times: the stored UUID above stays put because it's sitting in localStorage. Clear it here, then reload — it'll be regenerated as a brand-new value, because there's nothing real backing it. The fingerprint hash next to it, meanwhile, will come back <em>identical</em> every time, unprompted, because it's derived from your actual hardware rather than anything stored.</div>
     <button id="clearIdBtn">Clear stored UUID</button>
     <div class="ip-result" id="clearIdResult"></div>
   </div>
 
   <div class="ip-box" style="margin-top:20px;">
-    <div style="margin-bottom:8px;">Precise GPS-level location is a different story: it's <strong>not</strong> silently available. The browser must show you an explicit permission prompt, and nothing is read until you click "Allow." This button demonstrates that consented path — no data leaves this tab.</div>
+    <div style="margin-bottom:8px;" id="txtGeoNote">Precise GPS-level location is a different story: it's <strong>not</strong> silently available. The browser must show you an explicit permission prompt, and nothing is read until you click "Allow." This button demonstrates that consented path — no data leaves this tab.</div>
     <button id="geoBtn">Request precise location (will show a browser permission prompt)</button>
     <div class="ip-result" id="geoResult"></div>
   </div>
-  <p class="mono" style="margin-top:28px;">No authentication. No cookies set. The IP/network card at the top queries a third-party service (ipwho.is) automatically on load. The precise-location button is the only thing gated behind an explicit permission prompt. View source any time.</p>
+  <p class="mono" style="margin-top:28px;" id="txtFinalNote">No authentication. No cookies set. The IP/network card at the top queries a third-party service (ipwho.is) automatically on load. The precise-location button is the only thing gated behind an explicit permission prompt. View source any time.</p>
 </footer>
 
 <script>
 (function(){
+  // ---------- Language: detect from browser, override via ?lang=, toggle via reload (no storage used) ----------
+  const urlLang = new URLSearchParams(location.search).get('lang');
+  const lang = (urlLang === 'ar' || urlLang === 'en') ? urlLang : (navigator.language && navigator.language.toLowerCase().startsWith('ar') ? 'ar' : 'en');
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+  const AR = {
+    // Hero
+    'Device Intelligence Playground': 'ساحة اختبار بصمة الجهاز',
+    'See every signal this browser exposes, live': 'شاهد كل إشارة يكشفها هذا المتصفح، مباشرة',
+    'No login, no cookies, no permission prompts for most of it. This mirrors the categories used by commercial fingerprinting/anti-fraud tools — each card below is a real signal read straight from your browser right now.':
+      'بدون تسجيل دخول، بدون كوكيز، وبدون طلبات إذن في معظم الأحيان. تحاكي هذه الصفحة الفئات التي تستخدمها أدوات بصمة المتصفح التجارية ومكافحة الاحتيال — كل بطاقة أدناه تعرض إشارة حقيقية تُقرأ من متصفحك الآن.',
+    'Visitor ID (session fingerprint)': 'معرّف الزائر (بصمة الجلسة)',
+    'Stable device hash (hardware/software only)': 'بصمة الجهاز الثابتة (عتاد وبرمجيات فقط)',
+    'Stored UUID (localStorage)': 'المعرّف المخزَّن (localStorage)',
+    'Public IP': 'عنوان IP العام',
+    'Approx. location': 'الموقع التقريبي',
+    'Signals collected': 'عدد الإشارات المجمَّعة',
+    'The Visitor ID and signal count are derived only from values shown below and are never stored. The Stable device hash uses only hardware/rendering signals that don\'t change across sessions (GPU, canvas, fonts, screen, CPU) — deliberately excluding IP, timezone, permissions, and other things that vary by network or setting. The UUID is deliberately written to localStorage so you can compare a real stored identifier against a recomputed fingerprint — see the "Persistence" card. IP/location come from a third-party lookup that fires automatically on load, same as any site would see it. Nothing on this page is logged or sent anywhere else.':
+      'يُشتق معرّف الزائر وعدد الإشارات فقط من القيم الموضحة أدناه ولا يتم تخزينهما أبدًا. تستخدم بصمة الجهاز الثابتة فقط إشارات العتاد والعرض التي لا تتغير بين الجلسات (كرت الشاشة، الرسم على الكانفاس، الخطوط، الشاشة، المعالج) — وتستبعد عمدًا عنوان IP والمنطقة الزمنية والأذونات وأي شيء آخر يتغير حسب الشبكة أو الإعدادات. يُكتب المعرّف الفريد عمدًا في localStorage لتتمكن من مقارنة معرّف مخزَّن حقيقي ببصمة يُعاد حسابها — انظر بطاقة "الاستمرارية". يأتي عنوان IP والموقع من طلب بحث خارجي يعمل تلقائيًا عند التحميل، تمامًا كما يراه أي موقع. لا شيء في هذه الصفحة يُسجَّل أو يُرسل إلى أي مكان آخر.',
+
+    // Category titles
+    'Browser & session': 'المتصفح والجلسة',
+    'Hardware signals': 'إشارات العتاد',
+    'Display': 'الشاشة',
+    'Locale & time': 'المنطقة والوقت',
+    'Rendering fingerprint': 'بصمة العرض والرسم',
+    'Persistence: real ID vs. recomputed fingerprint': 'الاستمرارية: معرّف حقيقي مقابل بصمة مُعاد حسابها',
+    'Fonts & installed software traces': 'الخطوط وآثار البرامج المثبَّتة',
+    'Tracker-blocking test': 'اختبار حجب المتعقبات',
+    'WebRTC local network exposure': 'كشف الشبكة المحلية عبر WebRTC',
+    'Consistency check ("lie detector")': 'فحص الاتساق ("كاشف الكذب")',
+    'Permission states': 'حالات الأذونات',
+    'Storage capabilities': 'إمكانات التخزين',
+    'Connected media devices': 'أجهزة الوسائط المتصلة',
+    'Advanced hardware & sensors': 'العتاد والحساسات المتقدمة',
+    'Client Hints & platform consistency': 'تلميحات العميل واتساق المنصة',
+    'Public IP & network': 'عنوان IP العام والشبكة',
+
+    // Category descriptions
+    'Sent automatically on every request you make, to every site, before any script even runs.':
+      'تُرسَل تلقائيًا مع كل طلب تقوم به، إلى كل موقع، حتى قبل تشغيل أي سكربت.',
+    'Rough hardware characteristics, readable without any permission prompt.':
+      'خصائص عامة عن العتاد، قابلة للقراءة دون أي طلب إذن.',
+    'Screen geometry and rendering surface — mostly used to serve you the right layout, but also narrows down which device you have.':
+      'أبعاد الشاشة وسطح العرض — تُستخدم غالبًا لتقديم التخطيط المناسب، لكنها أيضًا تضيّق نطاق تحديد جهازك.',
+    'Where and roughly when a site thinks you are — used for personalization, and for narrowing your location.':
+      'أين ومتى يعتقد الموقع أنك موجود تقريبًا — تُستخدم للتخصيص ولتضييق نطاق موقعك.',
+    'These are the classic fingerprinting signals: how your exact GPU and font-rendering pipeline draws a hidden image, hashed into a near-unique value. This is how sites can recognize a device across visits with no cookies at all.':
+      'هذه هي إشارات البصمة الكلاسيكية: كيف يرسم كرت الشاشة ومحرك عرض الخطوط لديك صورة مخفية، تُحوَّل إلى قيمة شبه فريدة. هكذا تستطيع المواقع التعرف على جهاز عبر الزيارات دون أي كوكيز إطلاقًا.',
+    'Two very different mechanisms, side by side. The stored ID is a random value this page wrote to localStorage on your first visit — delete it and the "identity" is gone. The fingerprint below is never stored anywhere; it is recomputed fresh every load from your GPU, canvas rendering, and hardware traits, so it comes back identical without needing to store anything at all.':
+      'آليتان مختلفتان تمامًا جنبًا إلى جنب. المعرّف المخزَّن قيمة عشوائية كتبتها هذه الصفحة في localStorage عند زيارتك الأولى — احذفه وتختفي "الهوية". أما البصمة أدناه فلا تُخزَّن أبدًا في أي مكان؛ يُعاد حسابها من جديد في كل تحميل من كرت الشاشة والرسم على الكانفاس وخصائص العتاد، لذا تعود متطابقة دون الحاجة لتخزين أي شيء.',
+    'Which fonts render differently than the browser default reveals what you have installed — a signal used heavily by Cover Your Tracks and CreepJS, since font lists vary a lot between OS, region, and installed apps.':
+      'الخطوط التي تُعرض بشكل مختلف عن الافتراضي تكشف ما هو مثبَّت لديك — إشارة تستخدمها بكثرة أدوات مثل Cover Your Tracks وCreepJS، لأن قوائم الخطوط تختلف كثيرًا بين أنظمة التشغيل والمناطق والتطبيقات المثبَّتة.',
+    'Cover Your Tracks checks this by trying to load known ad/tracking domains and seeing whether your browser or extensions stop them. This does the same, live.':
+      'تتحقق أداة Cover Your Tracks من هذا بمحاولة تحميل نطاقات إعلانات وتتبع معروفة ومعرفة ما إذا كان متصفحك أو إضافاتك تمنعها. هذه الصفحة تفعل الشيء نفسه، مباشرة.',
+    'Historically, WebRTC could leak your real local IP even behind a VPN. Modern browsers mask this with a randomized ".local" hostname (mDNS) instead of your real address — this test shows which you get.':
+      'تاريخيًا، كان بإمكان WebRTC تسريب عنوان IP المحلي الحقيقي حتى خلف VPN. تُخفي المتصفحات الحديثة هذا باستخدام اسم مضيف عشوائي بامتداد ".local" (mDNS) بدلاً من عنوانك الحقيقي — يوضح هذا الاختبار أيهما تحصل عليه.',
+    'CreepJS\'s core idea: individual values matter less than whether they agree with each other. A spoofed or automated browser usually contradicts itself somewhere.':
+      'الفكرة الأساسية لأداة CreepJS: القيم الفردية أقل أهمية من مدى اتساقها مع بعضها. المتصفح المزيَّف أو الآلي يناقض نفسه عادة في مكان ما.',
+    'A site can silently check whether you have already granted or blocked these — without ever showing you a prompt. Where permission is already granted, the actual value is shown below too.':
+      'يمكن لأي موقع أن يتحقق بصمت مما إذا كنت قد منحت هذه الأذونات أو رفضتها من قبل — دون أن يعرض عليك أي طلب إطلاقًا. وحيثما يكون الإذن ممنوحًا بالفعل، تظهر القيمة الفعلية أدناه أيضًا.',
+    'What kinds of local storage this browser makes available to any site, and roughly how much room you have.':
+      'أنواع التخزين المحلي التي يوفرها هذا المتصفح لأي موقع، وتقريبًا كمية المساحة المتاحة لديك.',
+    'Device counts are visible with zero permission. Labels (like "Logitech Webcam") only unlock after you\'ve granted mic/camera access at least once.':
+      'عدد الأجهزة مرئي دون أي إذن. أما الأسماء (مثل "كاميرا لوجيتك") فلا تظهر إلا بعد منح إذن الميكروفون أو الكاميرا مرة واحدة على الأقل.',
+    'Deeper hardware and rendering-pipeline signals — GPU adapter details, supported codecs, and system preferences most sites never bother reading, but all are available with zero permission prompt.':
+      'إشارات أعمق عن العتاد ومسار العرض — تفاصيل كرت الشاشة، الترميزات المدعومة، وتفضيلات النظام التي لا تكلف معظم المواقع نفسها عناء قراءتها، لكنها كلها متاحة دون أي طلب إذن.',
+    'Modern Chromium browsers expose a separate "Client Hints" identity system alongside the classic User-Agent — and if a site explicitly asks for high-entropy values, it can get your exact OS version and CPU architecture, which is often more precise than the UA string this page redacted earlier.':
+      'تكشف متصفحات Chromium الحديثة نظام هوية منفصل يُسمى "تلميحات العميل" إلى جانب سلسلة الوكيل التقليدية — وإذا طلب موقع ما قيمًا عالية الدقة صراحةً، يمكنه الحصول على إصدار نظام التشغيل الدقيق ومعمارية المعالج، وغالبًا ما يكون ذلك أدق من سلسلة الوكيل التي حجبتها هذه الصفحة سابقًا.',
+    'Not readable by JavaScript at all — but visible to every server you talk to on every request, automatically, the moment you connect. This queries a third-party lookup (ipwho.is) on load to show exactly what a typical server-side log would capture about you.':
+      'غير قابل للقراءة عبر جافاسكريبت إطلاقًا — لكنه مرئي لكل خادم تتواصل معه في كل طلب، تلقائيًا، لحظة اتصالك. تستعلم هذه البطاقة من خدمة خارجية (ipwho.is) عند التحميل لتوضح بالضبط ما قد يسجله سجل خادم نموذجي عنك.',
+
+    // Row labels
+    'User-Agent (OS redacted)': 'سلسلة الوكيل (نظام التشغيل محجوب)',
+    'Language(s)': 'اللغة/اللغات',
+    'Cookies enabled': 'الكوكيز مفعّلة',
+    'Do Not Track signal': 'إشارة عدم التتبع',
+    'PDF viewer built in': 'عارض PDF مدمج',
+    'Referrer that brought you here': 'المُحيل الذي أوصلك إلى هنا',
+    'Logical CPU cores': 'أنوية المعالج المنطقية',
+    'Device memory (approx, GB)': 'ذاكرة الجهاز (تقريبًا، جيجابايت)',
+    'Max touch points': 'أقصى نقاط لمس',
+    'Network type': 'نوع الشبكة',
+    'Estimated downlink (Mbps)': 'سرعة التنزيل التقديرية (ميجابت/ث)',
+    'Screen size': 'حجم الشاشة',
+    'Available screen size': 'حجم الشاشة المتاح',
+    'Color depth': 'عمق الألوان',
+    'Device pixel ratio': 'نسبة البكسل للجهاز',
+    'Orientation': 'الاتجاه',
+    'Timezone': 'المنطقة الزمنية',
+    'UTC offset (minutes)': 'فرق التوقيت العالمي (دقائق)',
+    'Locale': 'الإعدادات المحلية',
+    'Calendar system': 'نظام التقويم',
+    'GPU vendor': 'الشركة المصنّعة لكرت الشاشة',
+    'GPU renderer': 'محرك عرض كرت الشاشة',
+    'Canvas render hash': 'بصمة رسم الكانفاس',
+    'Recomputed fingerprint hash': 'البصمة المُعاد حسابها',
+    'Fonts detected': 'الخطوط المكتشفة',
+    'Speech synthesis voices': 'أصوات تحويل النص إلى كلام',
+    'doubleclick.net (Google ads)': 'doubleclick.net (إعلانات جوجل)',
+    'googlesyndication.com (Google ads)': 'googlesyndication.com (إعلانات جوجل)',
+    'facebook.com/tr (Meta pixel)': 'facebook.com/tr (بكسل ميتا)',
+    'ICE candidate leak check': 'فحص تسريب مرشحات ICE',
+    'Camera': 'الكاميرا',
+    'Microphone': 'الميكروفون',
+    'Geolocation': 'تحديد الموقع الجغرافي',
+    'Notifications': 'الإشعارات',
+    'Clipboard read': 'قراءة الحافظة',
+    'Bluetooth / USB device access': 'الوصول إلى أجهزة البلوتوث / USB',
+    'localStorage available': 'التخزين المحلي متاح',
+    'IndexedDB available': 'قاعدة IndexedDB متاحة',
+    'Storage quota (approx.)': 'حصة التخزين (تقريبًا)',
+    'Devices detected': 'الأجهزة المكتشفة',
+    'GPU (WebGPU) adapter info': 'معلومات كرت الشاشة (WebGPU)',
+    'Media codecs supported': 'ترميزات الوسائط المدعومة',
+    'JS heap size limit (Chrome only)': 'حد ذاكرة جافاسكريبت (كروم فقط)',
+    'Color scheme preference': 'تفضيل نظام الألوان',
+    'Reduced motion preference': 'تفضيل تقليل الحركة',
+    'Hover capability': 'إمكانية التحويم',
+    'Pointer type': 'نوع المؤشر',
+    'WebAssembly features': 'ميزات WebAssembly',
+    'Keyboard layout': 'تخطيط لوحة المفاتيح',
+    'Platform (Client Hints)': 'المنصة (تلميحات العميل)',
+    'Brands': 'العلامات التجارية',
+    'High-entropy details (arch/model/version)': 'تفاصيل عالية الدقة (المعمارية/الطراز/الإصدار)',
+    'DevTools open (heuristic)': 'أدوات المطور مفتوحة (تخمين)',
+    'not available in this browser': 'غير متاح في هذا المتصفح',
+    'Country': 'الدولة',
+    'Region': 'المنطقة',
+    'City': 'المدينة',
+    'Approx. coordinates': 'الإحداثيات التقريبية',
+    'ISP / network': 'مزود الخدمة / الشبكة',
+
+    // Risk badges
+    'High signal': 'إشارة عالية',
+    'Moderate signal': 'إشارة متوسطة',
+    'Low signal': 'إشارة منخفضة',
+
+    // Footer
+    "Deliberately excluded:": 'مُستبعَد عمدًا:',
+    "this report does not collect or display cookies, any persistent machine/device identifier, your MAC address (no browser can read this — it's not a gap, it's a hard OS/network boundary), or OS-version detail from your user-agent string (redacted below on request).":
+      'لا يجمع هذا التقرير أو يعرض الكوكيز، ولا أي معرّف دائم للجهاز، ولا عنوان MAC (لا يستطيع أي متصفح قراءته — ليست هذه ثغرة، بل حد صارم على مستوى نظام التشغيل والشبكة)، ولا تفاصيل إصدار نظام التشغيل من سلسلة الوكيل (محجوبة أعلاه).',
+    "Reload this page a few times: the stored UUID above stays put because it's sitting in localStorage. Clear it here, then reload — it'll be regenerated as a brand-new value, because there's nothing real backing it. The fingerprint hash next to it, meanwhile, will come back identical every time, unprompted, because it's derived from your actual hardware rather than anything stored.":
+      'أعد تحميل هذه الصفحة عدة مرات: يبقى المعرّف المخزَّن أعلاه كما هو لأنه محفوظ في localStorage. امسحه من هنا ثم أعد التحميل — سيُعاد إنشاؤه كقيمة جديدة تمامًا، لأنه لا يوجد شيء حقيقي يدعمه. أما بصمة الجهاز المجاورة له فستعود متطابقة في كل مرة، دون أي طلب، لأنها مشتقة من عتادك الفعلي وليس من أي شيء مخزَّن.',
+    'Clear stored UUID': 'مسح المعرّف المخزَّن',
+    'Precise GPS-level location is a different story: it\'s not silently available. The browser must show you an explicit permission prompt, and nothing is read until you click "Allow." This button demonstrates that consented path — no data leaves this tab.':
+      'الموقع الدقيق عبر GPS قصة مختلفة: فهو غير متاح بصمت. يجب أن يعرض المتصفح طلب إذن صريحًا، ولا يُقرأ شيء حتى تضغط "السماح". يوضح هذا الزر ذلك المسار القائم على الموافقة — لا تغادر أي بيانات هذا التبويب.',
+    'Request precise location (will show a browser permission prompt)': 'طلب الموقع الدقيق (سيعرض المتصفح طلب إذن)',
+    'No authentication. No cookies set. The IP/network card at the top queries a third-party service (ipwho.is) automatically on load. The precise-location button is the only thing gated behind an explicit permission prompt. View source any time.':
+      'بدون مصادقة. بدون كوكيز. تستعلم بطاقة IP/الشبكة أعلى الصفحة من خدمة خارجية (ipwho.is) تلقائيًا عند التحميل. زر الموقع الدقيق هو الشيء الوحيد المقيَّد بطلب إذن صريح. يمكنك عرض المصدر في أي وقت.',
+  };
+
+  function t(s){ return lang === 'ar' ? (AR[s] || s) : s; }
+
+  // Apply translations to static (non-dynamically-generated) elements
+  document.title = t('Device Intelligence Playground');
+  const staticEls = {
+    txtEyebrow: 'Device Intelligence Playground',
+    txtH1: 'See every signal this browser exposes, live',
+    lblVisitorId: 'Visitor ID (session fingerprint)',
+    lblStableHash: 'Stable device hash (hardware/software only)',
+    lblUUID: 'Stored UUID (localStorage)',
+    lblIP: 'Public IP',
+    lblLocation: 'Approx. location',
+    lblSignals: 'Signals collected',
+    txtExcludedLabel: 'Deliberately excluded:',
+    clearIdBtn: 'Clear stored UUID',
+    geoBtn: 'Request precise location (will show a browser permission prompt)',
+  };
+  Object.entries(staticEls).forEach(([id, en])=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = t(en);
+  });
+  // Elements whose original English text IS the dictionary key (read then translate, to avoid re-typing long strings)
+  ['txtLede','txtNote','txtExcludedRest','txtPersistNote','txtGeoNote','txtFinalNote'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = t(el.textContent);
+  });
+
+  // Language toggle: reloads with ?lang=xx swapped (no storage used, so this is the only way to persist the choice across a click)
+  const toggleBtn = document.getElementById('langToggle');
+  toggleBtn.textContent = lang === 'ar' ? 'English' : 'العربية';
+  toggleBtn.addEventListener('click', function(){
+    const next = lang === 'ar' ? 'en' : 'ar';
+    const url = new URL(location.href);
+    url.searchParams.set('lang', next);
+    location.href = url.toString();
+  });
+
   const report = document.getElementById('report');
   const collected = []; // {key, value} pairs used for hash + count
   const collectedMap = {}; // same data, keyed, so we can pick a subset (e.g. stable-only signals)
@@ -364,11 +559,11 @@
       <div class="cat-head">
         <div class="cat-title-row">
           <span class="cat-icon">${icon}</span>
-          <h2>${title}</h2>
+          <h2>${t(title)}</h2>
         </div>
-        <span class="risk ${risk}">${risk === 'high' ? 'High signal' : risk === 'med' ? 'Moderate signal' : 'Low signal'}</span>
+        <span class="risk ${risk}">${risk === 'high' ? t('High signal') : risk === 'med' ? t('Moderate signal') : t('Low signal')}</span>
       </div>
-      <p class="cat-desc">${desc}</p>
+      <p class="cat-desc">${t(desc)}</p>
       <div class="rows"></div>
     `;
     const rowsEl = sec.querySelector('.rows');
@@ -376,7 +571,7 @@
       rowDelay += 0.03;
       const r = document.createElement('div');
       r.className = 'row';
-      r.innerHTML = `<div class="k">${k}</div><div class="v redacted" style="--d:${rowDelay}s">${v === '' ? '<span class="fallback">not available in this browser</span>' : escapeHtml(String(v))}</div>`;
+      r.innerHTML = `<div class="k">${t(k)}</div><div class="v redacted" style="--d:${rowDelay}s">${v === '' ? '<span class="fallback">' + t('not available in this browser') + '</span>' : escapeHtml(String(v))}</div>`;
       rowsEl.appendChild(r);
     });
     report.appendChild(sec);
