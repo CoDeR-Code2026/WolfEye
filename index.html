@@ -265,6 +265,10 @@
       <div class="hash" id="sigHash">computing…</div>
     </div>
     <div class="stat">
+      <div class="label">Stable device hash (hardware/software only)</div>
+      <div class="hash" id="stableHash">computing…</div>
+    </div>
+    <div class="stat">
       <div class="label">Stored UUID (localStorage)</div>
       <div class="hash" id="statUUID">computing…</div>
     </div>
@@ -281,7 +285,7 @@
       <div class="count" id="sigCount">counting…</div>
     </div>
   </div>
-  <p class="note-inline">The Visitor ID and signal count are derived only from values shown below and are never stored. The UUID is deliberately written to localStorage so you can compare a real stored identifier against a recomputed fingerprint — see the "Persistence" card. IP/location come from a third-party lookup that fires automatically on load, same as any site would see it. Nothing on this page is logged or sent anywhere else.</p>
+  <p class="note-inline">The Visitor ID and signal count are derived only from values shown below and are never stored. The Stable device hash uses only hardware/rendering signals that don't change across sessions (GPU, canvas, fonts, screen, CPU) — deliberately excluding IP, timezone, permissions, and other things that vary by network or setting. The UUID is deliberately written to localStorage so you can compare a real stored identifier against a recomputed fingerprint — see the "Persistence" card. IP/location come from a third-party lookup that fires automatically on load, same as any site would see it. Nothing on this page is logged or sent anywhere else.</p>
 </div>
 
 <div class="wrap" id="report"></div>
@@ -306,9 +310,16 @@
 (function(){
   const report = document.getElementById('report');
   const collected = []; // {key, value} pairs used for hash + count
+  const collectedMap = {}; // same data, keyed, so we can pick a subset (e.g. stable-only signals)
+
+  // Signals that stay constant across reloads/sessions on the same device —
+  // deliberately excludes anything network-, session-, or setting-dependent
+  // (IP/location, timezone, permission grants, tracker-blocking, WebRTC/network state, clipboard, DevTools).
+  const STABLE_KEYS = ['cpu','mem','touch','scr','scra','depth','dpr','gpuv','gpur','canvas','fonts','wasm','kbd','chplatform','chbrands','ch_hi','heap','pointer','hover'];
 
   function record(key, value){
     collected.push(key + '::' + String(value));
+    collectedMap[key] = value;
     return value;
   }
 
@@ -894,6 +905,8 @@
     setTimeout(()=>{
       document.getElementById('sigCount').textContent = collected.length + ' distinct signals read';
       document.getElementById('sigHash').textContent = hashString(collected.join('|'));
+      const stableStr = STABLE_KEYS.map(k => k + '::' + (collectedMap[k] ?? '')).join('|');
+      document.getElementById('stableHash').textContent = hashString(stableStr);
     }, 3000);
   }
 
@@ -902,6 +915,7 @@
   // Provisional hash/count immediately (updates again once async signals land)
   document.getElementById('sigCount').textContent = collected.length + ' distinct signals read (finalizing…)';
   document.getElementById('sigHash').textContent = hashString(collected.join('|'));
+  document.getElementById('stableHash').textContent = hashString(STABLE_KEYS.map(k => k + '::' + (collectedMap[k] ?? '')).join('|')) + ' (finalizing…)';
 
   // ---------- Clear the one stored value this page writes ----------
   document.getElementById('clearIdBtn').addEventListener('click', function(){
