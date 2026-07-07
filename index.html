@@ -6,162 +6,194 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Exposure Report — what this tab already knows</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#12151A;
-    --ink-2:#1A1F26;
-    --paper:#E7E3D8;
-    --paper-dim:#9AA0A6;
-    --redact:#0A0C0F;
-    --amber:#D98E3F;
-    --teal:#5B8A87;
-    --danger:#C1543A;
-    --divider:#2A2F38;
+    --bg:#F5F6F8;
+    --card:#FFFFFF;
+    --border:#E4E7EC;
+    --ink:#14171F;
+    --ink-dim:#6B7180;
+    --accent:#3B5BFF;
+    --accent-soft:#EEF1FF;
+    --good:#12805C;
+    --good-bg:#E6F6EF;
+    --warn:#8A5A00;
+    --warn-bg:#FFF3DD;
+    --bad:#B4232C;
+    --bad-bg:#FDEAEA;
     --mono: 'IBM Plex Mono', monospace;
-    --serif: 'Source Serif 4', Georgia, serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --radius: 14px;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
-    background:var(--ink);
-    color:var(--paper);
-    font-family:var(--serif);
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
     line-height:1.5;
     -webkit-font-smoothing:antialiased;
   }
-  a{color:var(--amber);}
+  a{color:var(--accent);}
 
   /* ---------- Header / hero ---------- */
   .hero{
-    padding:64px 24px 40px;
-    max-width:880px;
+    padding:48px 24px 32px;
+    max-width:1100px;
     margin:0 auto;
-    border-bottom:1px solid var(--divider);
   }
   .eyebrow{
     font-family:var(--mono);
     font-size:12px;
-    letter-spacing:0.14em;
+    letter-spacing:0.1em;
     text-transform:uppercase;
-    color:var(--teal);
-    margin:0 0 18px;
+    color:var(--accent);
+    margin:0 0 14px;
+    font-weight:600;
   }
   h1{
-    font-family:var(--serif);
+    font-family:var(--sans);
     font-weight:700;
-    font-size:clamp(28px,5vw,44px);
-    line-height:1.15;
-    margin:0 0 20px;
-    max-width:14ch;
+    font-size:clamp(26px,4vw,38px);
+    line-height:1.2;
+    margin:0 0 16px;
+    max-width:22ch;
+    color:var(--ink);
+    letter-spacing:-0.01em;
   }
   .lede{
-    color:var(--paper-dim);
-    font-size:17px;
-    max-width:62ch;
-    margin:0 0 32px;
+    color:var(--ink-dim);
+    font-size:16px;
+    max-width:64ch;
+    margin:0 0 28px;
   }
 
   .signature{
-    font-family:var(--mono);
-    background:var(--ink-2);
-    border:1px solid var(--divider);
-    border-radius:4px;
-    padding:20px 22px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:24px 28px;
     display:flex;
     flex-wrap:wrap;
-    gap:24px;
+    gap:32px;
     align-items:center;
+    box-shadow:0 1px 3px rgba(20,23,31,0.04);
   }
   .signature .label{
     font-size:11px;
-    letter-spacing:0.1em;
+    letter-spacing:0.08em;
     text-transform:uppercase;
-    color:var(--paper-dim);
-    margin-bottom:6px;
+    color:var(--ink-dim);
+    margin-bottom:8px;
+    font-weight:600;
   }
   .signature .hash{
-    font-size:20px;
-    color:var(--amber);
-    letter-spacing:0.02em;
+    font-family:var(--mono);
+    font-size:19px;
+    color:var(--accent);
+    letter-spacing:0.01em;
     word-break:break-all;
+    font-weight:600;
   }
   .signature .count{
-    font-size:20px;
-    color:var(--paper);
+    font-family:var(--mono);
+    font-size:19px;
+    color:var(--ink);
+    font-weight:600;
   }
   .signature .divider-v{
     width:1px;
     align-self:stretch;
-    background:var(--divider);
+    background:var(--border);
   }
   .note-inline{
-    font-family:var(--mono);
-    font-size:11px;
-    color:var(--paper-dim);
+    font-size:12px;
+    color:var(--ink-dim);
     margin-top:14px;
+    line-height:1.6;
   }
 
-  /* ---------- Sections ---------- */
-  .wrap{max-width:880px;margin:0 auto;padding:0 24px;}
+  /* ---------- Card grid ---------- */
+  .wrap{
+    max-width:1100px;
+    margin:0 auto;
+    padding:8px 24px 0;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));
+    gap:16px;
+  }
   section.category{
-    padding:36px 0;
-    border-bottom:1px solid var(--divider);
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    box-shadow:0 1px 3px rgba(20,23,31,0.04);
+    display:flex;
+    flex-direction:column;
   }
   .cat-head{
     display:flex;
-    align-items:baseline;
+    align-items:flex-start;
     justify-content:space-between;
-    margin-bottom:6px;
     gap:12px;
+    margin-bottom:8px;
   }
+  .cat-title-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .cat-icon{ font-size:18px; line-height:1; }
   .cat-head h2{
-    font-family:var(--mono);
-    font-size:14px;
-    letter-spacing:0.08em;
-    text-transform:uppercase;
-    color:var(--paper);
+    font-family:var(--sans);
+    font-size:14.5px;
+    font-weight:650;
+    letter-spacing:0;
+    text-transform:none;
+    color:var(--ink);
     margin:0;
   }
   .cat-head .risk{
-    font-family:var(--mono);
+    font-family:var(--sans);
     font-size:11px;
-    letter-spacing:0.06em;
-    text-transform:uppercase;
-    padding:3px 8px;
-    border-radius:3px;
+    font-weight:650;
+    letter-spacing:0.02em;
+    padding:4px 10px;
+    border-radius:999px;
     white-space:nowrap;
   }
-  .risk.low{color:var(--teal); border:1px solid var(--teal);}
-  .risk.med{color:var(--amber); border:1px solid var(--amber);}
-  .risk.high{color:var(--danger); border:1px solid var(--danger);}
+  .risk.low{color:var(--good); background:var(--good-bg);}
+  .risk.med{color:var(--warn); background:var(--warn-bg);}
+  .risk.high{color:var(--bad); background:var(--bad-bg);}
 
   .cat-desc{
-    color:var(--paper-dim);
-    font-size:14px;
-    max-width:64ch;
-    margin:0 0 20px;
+    color:var(--ink-dim);
+    font-size:13px;
+    line-height:1.5;
+    margin:0 0 16px;
   }
 
-  .rows{display:flex; flex-direction:column; gap:1px; background:var(--divider);}
+  .rows{display:flex; flex-direction:column; gap:0;}
   .row{
-    background:var(--ink);
     display:grid;
-    grid-template-columns: 220px 1fr;
-    gap:16px;
-    padding:11px 4px;
+    grid-template-columns: 40% 1fr;
+    gap:12px;
+    padding:9px 0;
     align-items:start;
+    border-top:1px solid var(--border);
   }
+  .row:first-child{ border-top:none; }
   .row .k{
-    font-family:var(--mono);
-    font-size:12.5px;
-    color:var(--paper-dim);
-    padding-top:2px;
+    font-size:12px;
+    color:var(--ink-dim);
+    padding-top:1px;
+    font-weight:500;
   }
   .row .v{
     font-family:var(--mono);
-    font-size:13px;
-    color:var(--paper);
+    font-size:12.5px;
+    color:var(--ink);
     word-break:break-word;
     position:relative;
     min-height:1.2em;
@@ -170,8 +202,8 @@
     content:"";
     position:absolute;
     inset:0;
-    background:var(--redact);
-    border-radius:2px;
+    background:var(--border);
+    border-radius:4px;
     animation: reveal 0.6s ease forwards;
     animation-delay: var(--d, 0s);
   }
@@ -180,43 +212,45 @@
     70%{ opacity:1; }
     100%{ opacity:0; }
   }
-  .v .fallback{color:var(--paper-dim); font-style:italic;}
+  .v .fallback{color:var(--ink-dim); font-style:italic;}
 
   @media (max-width:640px){
+    .wrap{grid-template-columns:1fr;}
     .row{grid-template-columns: 1fr; gap:2px;}
   }
 
   footer{
-    max-width:880px;
-    margin:0 auto;
-    padding:40px 24px 80px;
-    color:var(--paper-dim);
+    max-width:1100px;
+    margin:24px auto 0;
+    padding:24px 24px 64px;
+    color:var(--ink-dim);
     font-size:13px;
   }
   footer .mono{font-family:var(--mono); font-size:12px;}
   .ip-box{
-    font-family:var(--mono);
     font-size:13px;
-    background:var(--ink-2);
-    border:1px solid var(--divider);
-    border-radius:4px;
-    padding:16px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px 22px;
     margin-top:16px;
+    box-shadow:0 1px 3px rgba(20,23,31,0.04);
   }
   .ip-box button{
-    font-family:var(--mono);
-    font-size:12px;
-    background:transparent;
-    color:var(--amber);
-    border:1px solid var(--amber);
-    border-radius:3px;
-    padding:6px 12px;
+    font-family:var(--sans);
+    font-size:12.5px;
+    font-weight:600;
+    background:var(--accent-soft);
+    color:var(--accent);
+    border:1px solid transparent;
+    border-radius:8px;
+    padding:8px 14px;
     cursor:pointer;
   }
-  .ip-box button:hover{background:rgba(217,142,63,0.1);}
-  .ip-result{margin-top:10px; color:var(--paper);}
+  .ip-box button:hover{background:#E2E6FF;}
+  .ip-result{margin-top:10px; color:var(--ink); font-family:var(--mono); font-size:12.5px;}
 
-  :focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
   @media (prefers-reduced-motion: reduce){
     .v.redacted::before{ animation: none; opacity:0; }
   }
@@ -225,23 +259,23 @@
 <body>
 
 <div class="hero">
-  <p class="eyebrow">Client-side exposure report — nothing leaves this tab</p>
-  <h1>What this page learned about your machine in the time it took to load</h1>
-  <p class="lede">Every value below was read by plain JavaScript, with no login, no cookies, and no permission prompts. This is the baseline exposure any site gets before you click anything. Nothing here is sent anywhere — open your network tab if you want to check.</p>
+  <p class="eyebrow">Device Intelligence Playground</p>
+  <h1>See every signal this browser exposes, live</h1>
+  <p class="lede">No login, no cookies, no permission prompts for most of it. This mirrors the categories used by commercial fingerprinting/anti-fraud tools — each card below is a real signal read straight from your browser right now.</p>
 
   <div class="signature">
     <div>
-      <div class="label">Composite signal count</div>
-      <div class="count" id="sigCount">counting…</div>
-    </div>
-    <div class="divider-v"></div>
-    <div style="flex:1;min-width:200px;">
-      <div class="label">Fingerprint hash (from the signals below)</div>
+      <div class="label">Visitor ID (session fingerprint)</div>
       <div class="hash" id="sigHash">computing…</div>
     </div>
+    <div class="divider-v"></div>
+    <div>
+      <div class="label">Signals collected</div>
+      <div class="count" id="sigCount">counting…</div>
+    </div>
   </div>
-  <p class="note-inline">This hash is derived only from values shown on this page. It is not stored, logged, or transmitted — reload the page and it's gone.</p>
-  <p class="note-inline" style="margin-top:6px;">Exception: the "Persistence" section further down deliberately writes one value to localStorage, clearly labeled, so you can see the difference between a real stored ID and a recomputed fingerprint. Nothing else on this page touches storage.</p>
+  <p class="note-inline">This ID is derived only from values shown below. It is not stored, logged, or transmitted — reload the page and it's gone.</p>
+  <p class="note-inline">Exception: the "Persistence" card further down deliberately writes one value to localStorage, clearly labeled, so you can see the difference between a real stored ID and a recomputed fingerprint. Nothing else on this page touches storage.</p>
 </div>
 
 <div class="wrap" id="report"></div>
@@ -300,13 +334,35 @@
       .trim();
   }
 
+  const CATEGORY_ICONS = {
+    'Browser & session': '🌐',
+    'Hardware signals': '⚙️',
+    'Display': '🖥️',
+    'Locale & time': '🕒',
+    'Rendering fingerprint': '🎨',
+    'Persistence: real ID vs. recomputed fingerprint': '🔁',
+    'Fonts & installed software traces': '🔤',
+    'Tracker-blocking test': '🛡️',
+    'WebRTC local network exposure': '📡',
+    'Consistency check ("lie detector")': '🕵️',
+    'Permission states': '🔐',
+    'Storage capabilities': '💾',
+    'Connected media devices': '🎙️',
+    'Advanced hardware & sensors': '🧩',
+    'Client Hints & platform consistency': '🧾',
+  };
+
   let rowDelay = 0;
   function addCategory(title, risk, desc, rows){
     const sec = document.createElement('section');
     sec.className = 'category';
+    const icon = CATEGORY_ICONS[title] || '📶';
     sec.innerHTML = `
       <div class="cat-head">
-        <h2>${title}</h2>
+        <div class="cat-title-row">
+          <span class="cat-icon">${icon}</span>
+          <h2>${title}</h2>
+        </div>
         <span class="risk ${risk}">${risk === 'high' ? 'High signal' : risk === 'med' ? 'Moderate signal' : 'Low signal'}</span>
       </div>
       <p class="cat-desc">${desc}</p>
