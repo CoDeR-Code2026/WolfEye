@@ -260,11 +260,22 @@
   </div>
 
   <div class="ip-box" style="margin-top:20px;">
+    <div style="margin-bottom:8px;">A few more browser APIs exist but require you to actively pick something from a native browser chooser, or grant a one-off permission — none of these run without your click, and each opens the browser's own dialog, not anything this page controls.</div>
+    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;">
+      <button id="clipBtn">Read clipboard</button>
+      <button id="btBtn">Choose Bluetooth device</button>
+      <button id="usbBtn">Choose USB device</button>
+      <button id="idleBtn">Check idle state</button>
+    </div>
+    <div class="ip-result" id="deviceResult"></div>
+  </div>
+
+  <div class="ip-box" style="margin-top:20px;">
     <div style="margin-bottom:8px;">Precise GPS-level location is a different story: it's <strong>not</strong> silently available. The browser must show you an explicit permission prompt, and nothing is read until you click "Allow." This button demonstrates that consented path — no data leaves this tab.</div>
     <button id="geoBtn">Request precise location (will show a browser permission prompt)</button>
     <div class="ip-result" id="geoResult"></div>
   </div>
-  <p class="mono" style="margin-top:28px;">No authentication. No cookies set. No data transmitted by this page. View source any time.</p>
+  <p class="mono" style="margin-top:28px;">No authentication. No cookies set. No data transmitted by this page except the on-demand third-party IP/geo lookup and native device choosers above, both of which run only after your click. View source any time.</p>
 </footer>
 
 <script>
@@ -515,6 +526,47 @@
       ['Devices detected', '(checking…)'],
     ]);
 
+  // ---------- Advanced hardware & sensors ----------
+  const heapInfo = safe(()=>performance.memory ? (performance.memory.jsHeapSizeLimit/1048576).toFixed(0) + ' MB' : '', '');
+  const colorScheme = safe(()=>matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light', '');
+  const reducedMotion = safe(()=>matchMedia('(prefers-reduced-motion: reduce)').matches, false);
+  const hoverCapable = safe(()=>matchMedia('(hover: hover)').matches, false);
+  const pointerType = safe(()=>matchMedia('(pointer: fine)').matches ? 'fine (mouse/trackpad)' : matchMedia('(pointer: coarse)').matches ? 'coarse (touch)' : 'none', '');
+  const wasmFeatures = safe(()=>{
+    const parts = [];
+    if(typeof WebAssembly !== 'undefined') parts.push('WebAssembly');
+    if(typeof SharedArrayBuffer !== 'undefined') parts.push('shared memory/threads');
+    return parts.join(', ') || 'not supported';
+  }, '');
+
+  addCategory('Advanced hardware & sensors', 'high',
+    'Deeper hardware and rendering-pipeline signals — GPU adapter details, supported codecs, and system preferences most sites never bother reading, but all are available with zero permission prompt.',
+    [
+      ['GPU (WebGPU) adapter info', '(checking…)'],
+      ['Media codecs supported', '(checking…)'],
+      ['JS heap size limit (Chrome only)', record('heap', heapInfo)],
+      ['Color scheme preference', record('colorscheme', colorScheme)],
+      ['Reduced motion preference', record('reducedmotion', reducedMotion)],
+      ['Hover capability', record('hover', hoverCapable)],
+      ['Pointer type', record('pointer', pointerType)],
+      ['WebAssembly features', record('wasm', wasmFeatures)],
+      ['Keyboard layout', '(checking…)'],
+    ]);
+
+  // ---------- Client Hints & platform consistency ----------
+  const chPlatform = safe(()=>navigator.userAgentData.platform, '');
+  const chBrands = safe(()=>navigator.userAgentData.brands.map(b=>b.brand+' '+b.version).join(', '), '');
+  const devtoolsOpen = safe(()=>(window.outerWidth - window.innerWidth > 160) || (window.outerHeight - window.innerHeight > 160), false);
+
+  addCategory('Client Hints & platform consistency', 'med',
+    'Modern Chromium browsers expose a separate "Client Hints" identity system alongside the classic User-Agent — and if a site explicitly asks for high-entropy values, it can get your exact OS version and CPU architecture, which is often more precise than the UA string this page redacted earlier.',
+    [
+      ['Platform (Client Hints)', record('chplatform', chPlatform)],
+      ['Brands', record('chbrands', chBrands)],
+      ['High-entropy details (arch/model/version)', '(checking…)'],
+      ['DevTools open (heuristic)', record('devtools', devtoolsOpen)],
+    ]);
+
   report.appendChild(Object.assign(document.createElement('div')));
 
   // ---------- Finalize hash + count, then fill async rows ----------
@@ -666,6 +718,90 @@
       devRow.textContent = 'not available in this browser';
     }
 
+    // Advanced hardware & sensors: WebGPU adapter
+    const advRows = document.querySelectorAll('.category')[13].querySelectorAll('.row .v');
+    try{
+      if(navigator.gpu){
+        const adapter = await navigator.gpu.requestAdapter();
+        const info = adapter && adapter.info ? adapter.info : (adapter ? await adapter.requestAdapterInfo?.() : null);
+        const text = info ? [info.vendor, info.architecture, info.device].filter(Boolean).join(' / ') || 'adapter found, details withheld' : 'WebGPU not available';
+        record('webgpu', text);
+        advRows[0].classList.remove('redacted');
+        advRows[0].textContent = text;
+      } else {
+        advRows[0].classList.remove('redacted');
+        advRows[0].textContent = 'WebGPU not supported in this browser';
+      }
+    }catch(e){
+      advRows[0].classList.remove('redacted');
+      advRows[0].textContent = 'WebGPU query failed/unsupported';
+    }
+
+    // Media codecs
+    try{
+      const candidates = [
+        ['video/mp4; codecs="avc1.42E01E"', 'H.264'],
+        ['video/webm; codecs="vp9"', 'VP9'],
+        ['video/mp4; codecs="hev1.1.6.L93.90"', 'H.265/HEVC'],
+        ['audio/mp4; codecs="mp4a.40.2"', 'AAC'],
+      ];
+      const supported = [];
+      for(const [type,label] of candidates){
+        try{
+          const result = await navigator.mediaCapabilities.decodingInfo({type:'file', video: type.startsWith('video')?{contentType:type,width:1920,height:1080,bitrate:2000000,framerate:30}:undefined, audio: type.startsWith('audio')?{contentType:type,channels:2,bitrate:128000,samplerate:44100}:undefined});
+          if(result.supported) supported.push(label);
+        }catch(e){ /* skip */ }
+      }
+      const text = supported.length ? supported.join(', ') : 'query unsupported in this browser';
+      record('codecs', text);
+      advRows[1].classList.remove('redacted');
+      advRows[1].textContent = text;
+    }catch(e){
+      advRows[1].classList.remove('redacted');
+      advRows[1].textContent = 'not available in this browser';
+    }
+
+    // Keyboard layout
+    try{
+      if(navigator.keyboard && navigator.keyboard.getLayoutMap){
+        const map = await navigator.keyboard.getLayoutMap();
+        const keys = ['KeyQ','KeyW','KeyA'].map(k=>map.get(k)).filter(Boolean);
+        const text = keys.length ? 'Detected (e.g. ' + keys.join('/') + '…)' : 'available but empty';
+        record('kbd', text);
+        advRows[8].classList.remove('redacted');
+        advRows[8].textContent = text;
+      } else {
+        advRows[8].classList.remove('redacted');
+        advRows[8].textContent = 'Keyboard API not supported in this browser';
+      }
+    }catch(e){
+      advRows[8].classList.remove('redacted');
+      advRows[8].textContent = 'not available / permission needed';
+    }
+
+    // Client Hints high-entropy values
+    const chRow = document.querySelectorAll('.category')[14].querySelectorAll('.row .v')[2];
+    try{
+      if(navigator.userAgentData && navigator.userAgentData.getHighEntropyValues){
+        const hi = await navigator.userAgentData.getHighEntropyValues(['architecture','model','platformVersion','uaFullVersion','bitness']);
+        const text = [
+          hi.architecture ? 'arch: '+hi.architecture : null,
+          hi.bitness ? hi.bitness+'-bit' : null,
+          hi.platformVersion ? 'OS version: '+hi.platformVersion : null,
+          hi.model ? 'model: '+hi.model : null,
+        ].filter(Boolean).join(', ') || 'no high-entropy fields returned';
+        record('ch_hi', text);
+        chRow.classList.remove('redacted');
+        chRow.textContent = text;
+      } else {
+        chRow.classList.remove('redacted');
+        chRow.textContent = 'Client Hints not supported in this browser (e.g. Firefox/Safari)';
+      }
+    }catch(e){
+      chRow.classList.remove('redacted');
+      chRow.textContent = 'not available in this browser';
+    }
+
     // Finalize composite hash + count now that everything is collected
     setTimeout(()=>{
       document.getElementById('sigCount').textContent = collected.length + ' distinct signals read';
@@ -683,6 +819,53 @@
   document.getElementById('clearIdBtn').addEventListener('click', function(){
     safe(()=>{localStorage.removeItem(STORAGE_KEY); return true;}, false);
     document.getElementById('clearIdResult').textContent = 'Cleared. Reload the page — you\'ll get a brand-new UUID, but the same fingerprint hash.';
+  });
+
+  // ---------- Permission-gated device access (click only, native browser dialogs) ----------
+  document.getElementById('clipBtn').addEventListener('click', async function(){
+    const out = document.getElementById('deviceResult');
+    try{
+      const text = await navigator.clipboard.readText();
+      out.textContent = text ? ('Clipboard contains: "' + text.slice(0,80) + (text.length>80?'…':'') + '"') : 'Clipboard is empty.';
+    }catch(e){
+      out.textContent = 'Clipboard read blocked or denied (' + e.message + ').';
+    }
+  });
+
+  document.getElementById('btBtn').addEventListener('click', async function(){
+    const out = document.getElementById('deviceResult');
+    try{
+      if(!navigator.bluetooth){ out.textContent = 'Web Bluetooth not supported in this browser.'; return; }
+      const device = await navigator.bluetooth.requestDevice({acceptAllDevices:true});
+      out.textContent = 'Selected Bluetooth device: ' + (device.name || '(unnamed device)') + ' — id: ' + device.id;
+    }catch(e){
+      out.textContent = 'No device chosen, or Bluetooth unavailable (' + e.message + ').';
+    }
+  });
+
+  document.getElementById('usbBtn').addEventListener('click', async function(){
+    const out = document.getElementById('deviceResult');
+    try{
+      if(!navigator.usb){ out.textContent = 'WebUSB not supported in this browser.'; return; }
+      const device = await navigator.usb.requestDevice({filters:[]});
+      out.textContent = 'Selected USB device: ' + (device.productName || 'unnamed') + ' (vendor ' + device.vendorId + ', product ' + device.productId + ')';
+    }catch(e){
+      out.textContent = 'No device chosen, or WebUSB unavailable (' + e.message + ').';
+    }
+  });
+
+  document.getElementById('idleBtn').addEventListener('click', async function(){
+    const out = document.getElementById('deviceResult');
+    try{
+      if(!('IdleDetector' in window)){ out.textContent = 'Idle Detection API not supported in this browser.'; return; }
+      const state = await IdleDetector.requestPermission();
+      if(state !== 'granted'){ out.textContent = 'Idle detection permission denied.'; return; }
+      const detector = new IdleDetector();
+      await detector.start({threshold: 60000});
+      out.textContent = 'User state: ' + detector.userState + ', screen state: ' + detector.screenState;
+    }catch(e){
+      out.textContent = 'Idle detection failed or unsupported (' + e.message + ').';
+    }
   });
 
   // ---------- On-demand IP + geo lookup (click only, third-party call, nothing stored) ----------
