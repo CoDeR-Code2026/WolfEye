@@ -690,18 +690,18 @@
     const out = document.getElementById('ipResult');
     out.textContent = 'Looking up…';
     try{
-      const res = await fetch('https://ipapi.co/json/');
+      const res = await fetch('https://ipwho.is/');
       const data = await res.json();
       out.innerHTML = `
         <div>Public IP: ${data.ip ?? 'unknown'}</div>
-        <div>Country: ${data.country_name ?? 'unknown'} (${data.country_code ?? '—'})</div>
+        <div>Country: ${data.country ?? 'unknown'} (${data.country_code ?? '—'})</div>
         <div>Region: ${data.region ?? 'unknown'}</div>
         <div>City: ${data.city ?? 'unknown'}</div>
         <div>Approx. coordinates: ${data.latitude ?? '—'}, ${data.longitude ?? '—'}</div>
-        <div>ISP / network: ${data.org ?? 'unknown'}</div>
+        <div>ISP / network: ${data.connection?.isp ?? 'unknown'}</div>
       `;
     }catch(e){
-      out.textContent = 'Lookup failed (network blocked, or ipapi unreachable from here).';
+      out.textContent = 'Lookup failed (network blocked, or ipwho.is unreachable from here).';
     }
   });
 
